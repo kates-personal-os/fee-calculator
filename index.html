@@ -168,6 +168,23 @@
     margin-top: 6px;
     display: none;
   }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #191919; color: #e3e2e0; }
+    input { background: #2f2f2f; border-color: #444; color: #e3e2e0; }
+    input:focus { border-color: #2eaadc; box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.25); }
+    .result-card { background: #2f2f2f; }
+    .result-row + .result-row { border-color: #444; }
+    .result-label { color: #9b9a97; }
+    .total-row .result-label { color: #e3e2e0; }
+    .hint-card.blue { background: #1a2e3a; color: #7ec8e3; }
+    .hint-card.green { background: #1a2e24; color: #7ec8a0; }
+    .hint-card.orange { background: #2e261a; color: #e8c87e; }
+    .hint-card.red { background: #2e1a1a; color: #e87e7e; }
+    .timeline-segment { background: #444; }
+    .timeline-labels { color: #666; }
+    label { color: #9b9a97; }
+  }
 </style>
 </head>
 <body>
