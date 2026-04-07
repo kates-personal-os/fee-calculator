@@ -185,6 +185,21 @@
     .timeline-labels { color: #666; }
     label { color: #9b9a97; }
   }
+
+  html.dark body { background: #191919; color: #e3e2e0; }
+  html.dark input { background: #2f2f2f; border-color: #444; color: #e3e2e0; }
+  html.dark input:focus { border-color: #2eaadc; box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.25); }
+  html.dark .result-card { background: #2f2f2f; }
+  html.dark .result-row + .result-row { border-color: #444; }
+  html.dark .result-label { color: #9b9a97; }
+  html.dark .total-row .result-label { color: #e3e2e0; }
+  html.dark .hint-card.blue { background: #1a2e3a; color: #7ec8e3; }
+  html.dark .hint-card.green { background: #1a2e24; color: #7ec8a0; }
+  html.dark .hint-card.orange { background: #2e261a; color: #e8c87e; }
+  html.dark .hint-card.red { background: #2e1a1a; color: #e87e7e; }
+  html.dark .timeline-segment { background: #444; }
+  html.dark .timeline-labels { color: #666; }
+  html.dark label { color: #9b9a97; }
 </style>
 </head>
 <body>
@@ -270,6 +285,10 @@ const TIERS = parseTiers(params.get('tiers'));
 const TIMING = parseTiming(params.get('timing'));
 const presetDate = params.get('date');
 const pageTitle = params.get('title');
+
+if (params.get('theme') === 'dark') {
+  document.documentElement.classList.add('dark');
+}
 
 if (!TIERS.length || !TIMING.length) {
   document.body.innerHTML = '<p style="color:#787774;padding:40px;text-align:center;">Calculator not configured.</p>';
