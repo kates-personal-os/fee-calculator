@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fee Calculator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #37352f;
+    background: #fff;
+    padding: 32px 24px;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  .input-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 14px;
+    color: #787774;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 16px;
+    border: 1px solid #e3e2e0;
+    border-radius: 6px;
+    outline: none;
+    font-family: inherit;
+    color: #37352f;
+    transition: border-color 0.15s;
+  }
+
+  input:focus {
+    border-color: #2eaadc;
+    box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.15);
+  }
+
+  .results {
+    display: none;
+    margin-top: 28px;
+  }
+
+  .results.visible { display: block; }
+
+  .result-card {
+    background: #f7f6f3;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+  }
+
+  .result-row + .result-row {
+    border-top: 1px solid #e9e8e5;
+  }
+
+  .result-label {
+    font-size: 14px;
+    color: #787774;
+  }
+
+  .result-value {
+    font-size: 16px;
+    font-weight: 600;
+    text-align: right;
+  }
+
+  .total-row .result-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #37352f;
+  }
+
+  .total-row .result-value {
+    font-size: 18px;
+  }
+
+  .hint-card {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .hint-card.blue {
+    background: #e8f4f8;
+    color: #1a6b8a;
+  }
+
+  .hint-card.green {
+    background: #e9f7ef;
+    color: #1a7a4c;
+  }
+
+  .hint-card.orange {
+    background: #fdf2e9;
+    color: #9a5b13;
+  }
+
+  .hint-card.red {
+    background: #fde8e8;
+    color: #9a1313;
+  }
+
+  .hint-title {
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .timeline {
+    display: flex;
+    gap: 2px;
+    margin-top: 20px;
+    margin-bottom: 8px;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .timeline-segment {
+    flex: 1;
+    background: #e3e2e0;
+    position: relative;
+    transition: background 0.3s;
+  }
+
+  .timeline-segment.active { background: #2eaadc; }
+  .timeline-segment.passed { background: #787774; }
+
+  .timeline-labels {
+    display: flex;
+    gap: 2px;
+    font-size: 11px;
+    color: #a09f9c;
+  }
+
+  .timeline-labels span {
+    flex: 1;
+    text-align: center;
+  }
+
+  .timeline-labels span.active {
+    color: #2eaadc;
+    font-weight: 600;
+  }
+
+  .error-text {
+    color: #eb5757;
+    font-size: 13px;
+    margin-top: 6px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<h2 id="page-title" style="display:none;margin-bottom:24px;font-size:18px;font-weight:600;"></h2>
+
+<div class="input-group">
+  <label>Your participation amount (USD)</label>
+  <input type="text" id="amount" placeholder="e.g. 6,000,000" inputmode="numeric">
+</div>
+
+<div class="input-group" id="date-group">
+  <label>Board approval date</label>
+  <input type="date" id="approval-date">
+</div>
+
+<p class="error-text" id="error"></p>
+
+<div class="results" id="results">
+
+  <div class="result-card">
+    <div class="result-row">
+      <span class="result-label">Admission fee</span>
+      <span class="result-value" id="admission-fee"></span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Timing fee</span>
+      <span class="result-value" id="timing-fee"></span>
+    </div>
+    <div class="result-row total-row">
+      <span class="result-label">Total fee</span>
+      <span class="result-value" id="total-fee"></span>
+    </div>
+    <div class="result-row total-row">
+      <span class="result-label">Fee amount</span>
+      <span class="result-value" id="fee-amount"></span>
+    </div>
+  </div>
+
+  <div class="hint-card blue" id="next-tier-card" style="display:none;">
+    <div class="hint-title" id="next-tier-title"></div>
+    <div id="next-tier-text"></div>
+  </div>
+
+  <div class="hint-card" id="timing-card">
+    <div class="hint-title" id="timing-title"></div>
+    <div id="timing-text"></div>
+  </div>
+
+  <div id="timeline-section">
+    <div class="timeline" id="timeline-bar"></div>
+    <div class="timeline-labels" id="timeline-labels"></div>
+  </div>
+
+</div>
+
+<script>
+// Config is passed via URL parameters:
+// ?tiers=5000000:15,7000000:12,10000000:9.5,12000000:7.5,15000000:7.25,0:7
+// &timing=90:0,150:2.5,240:3.75,0:5
+// &date=2026-03-15
+// &title=Your+Fee+Estimate
+
+const params = new URLSearchParams(window.location.search);
+
+function parseTiers(str) {
+  if (!str) return [];
+  return str.split(',').map(pair => {
+    const [max, fee] = pair.split(':');
+    return { max: max === '0' ? Infinity : parseFloat(max), fee: parseFloat(fee) };
+  });
+}
+
+function parseTiming(str) {
+  if (!str) return [];
+  return str.split(',').map(pair => {
+    const [days, fee] = pair.split(':');
+    return { maxDays: days === '0' ? Infinity : parseFloat(days), fee: parseFloat(fee) };
+  });
+}
+
+const TIERS = parseTiers(params.get('tiers'));
+const TIMING = parseTiming(params.get('timing'));
+const presetDate = params.get('date');
+const pageTitle = params.get('title');
+
+if (!TIERS.length || !TIMING.length) {
+  document.body.innerHTML = '<p style="color:#787774;padding:40px;text-align:center;">Calculator not configured.</p>';
+}
+
+const presetAmount = params.get('amount');
+
+if (presetDate) {
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('approval-date').value = presetDate;
+    document.getElementById('date-group').style.display = 'none';
+  });
+}
+
+if (presetAmount) {
+  document.addEventListener('DOMContentLoaded', function() {
+    const num = parseInt(presetAmount);
+    if (num > 0) {
+      document.getElementById('amount').value = num.toLocaleString('en-US');
+      calculate();
+    }
+  });
+}
+
+if (pageTitle) {
+  document.addEventListener('DOMContentLoaded', function() {
+    const h = document.getElementById('page-title');
+    if (h) { h.textContent = pageTitle; h.style.display = 'block'; }
+  });
+}
+
+function getAdmissionFee(amount) {
+  for (const t of TIERS) {
+    if (amount < t.max) return t.fee;
+  }
+  return 7;
+}
+
+function getNextTier(amount) {
+  for (let i = 0; i < TIERS.length - 1; i++) {
+    if (amount < TIERS[i].max) {
+      const next = TIERS[i + 1];
+      const gap = TIERS[i].max - amount;
+      return { gap, nextFee: next.fee, threshold: TIERS[i].max };
+    }
+  }
+  return null;
+}
+
+function getTimingInfo(approvalDate) {
+  const now = new Date();
+  const approval = new Date(approvalDate);
+  const days = Math.floor((now - approval) / (1000 * 60 * 60 * 24));
+
+  let current = TIMING[0];
+  let segmentIndex = 0;
+  for (let i = 0; i < TIMING.length; i++) {
+    if (days <= TIMING[i].maxDays || i === TIMING.length - 1) {
+      current = TIMING[i];
+      segmentIndex = i;
+      break;
+    }
+  }
+
+  const daysLeft = current.maxDays === Infinity ? 0 : current.maxDays - days;
+  return { days, fee: current.fee, daysLeft, segmentIndex };
+}
+
+function formatUSD(n) {
+  return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+function parseAmount(str) {
+  return parseFloat(str.replace(/[^0-9.]/g, ''));
+}
+
+function calculate() {
+  const raw = document.getElementById('amount').value;
+  const dateVal = document.getElementById('approval-date').value;
+  const results = document.getElementById('results');
+  const error = document.getElementById('error');
+
+  const amount = parseAmount(raw);
+  if (!amount || amount <= 0) {
+    results.classList.remove('visible');
+    error.style.display = 'none';
+    return;
+  }
+  if (!dateVal) {
+    results.classList.remove('visible');
+    error.textContent = 'Please select a board approval date.';
+    error.style.display = 'block';
+    return;
+  }
+
+  error.style.display = 'none';
+
+  const admissionFee = getAdmissionFee(amount);
+  const timing = getTimingInfo(dateVal);
+  const totalPct = admissionFee + timing.fee;
+  const feeAmount = amount * totalPct / 100;
+
+  document.getElementById('admission-fee').textContent = admissionFee + '%';
+  document.getElementById('timing-fee').textContent = timing.fee + '%';
+  document.getElementById('total-fee').textContent = totalPct + '%';
+  document.getElementById('fee-amount').textContent = formatUSD(feeAmount);
+
+  // Next tier hint
+  const nextTier = getNextTier(amount);
+  const nextCard = document.getElementById('next-tier-card');
+  if (nextTier) {
+    nextCard.style.display = 'block';
+    document.getElementById('next-tier-title').textContent =
+      'Admission fee: ' + admissionFee + '%';
+    document.getElementById('next-tier-text').textContent =
+      'Add ' + formatUSD(nextTier.gap) + ' to reach ' + nextTier.nextFee + '% (at ' + formatUSD(nextTier.threshold) + ')';
+  } else {
+    nextCard.style.display = 'block';
+    document.getElementById('next-tier-title').textContent =
+      'Admission fee: ' + admissionFee + '%';
+    document.getElementById('next-tier-text').textContent =
+      "You're at the lowest admission fee tier.";
+  }
+
+  // Timing hint
+  const timingCard = document.getElementById('timing-card');
+  const timingTitle = document.getElementById('timing-title');
+  const timingText = document.getElementById('timing-text');
+
+  timingCard.className = 'hint-card';
+  const isFirst = timing.segmentIndex === 0;
+  const isLast = timing.segmentIndex === TIMING.length - 1;
+  timingCard.classList.add(isFirst ? 'green' : isLast ? 'red' : 'orange');
+  timingTitle.textContent = 'Timing fee: ' + timing.fee + '%';
+  if (isLast) {
+    timingText.textContent = 'Maximum timing fee applies.';
+  } else {
+    const nextFee = TIMING[timing.segmentIndex + 1].fee;
+    timingText.textContent = timing.daysLeft + ' days' + (isFirst ? ' left to close with no timing fee.' : ' until fee increases to ' + nextFee + '%.');
+  }
+
+  // Timeline
+  const bar = document.getElementById('timeline-bar');
+  const labels = document.getElementById('timeline-labels');
+  bar.innerHTML = '';
+  labels.innerHTML = '';
+  let prevMax = 0;
+  for (let i = 0; i < TIMING.length; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'timeline-segment';
+    if (i < timing.segmentIndex) seg.classList.add('passed');
+    else if (i === timing.segmentIndex) seg.classList.add('active');
+    bar.appendChild(seg);
+
+    const lbl = document.createElement('span');
+    const rangeStart = prevMax === 0 ? '0' : (prevMax + 1);
+    const rangeEnd = TIMING[i].maxDays === Infinity ? '+' : TIMING[i].maxDays;
+    lbl.innerHTML = (TIMING[i].maxDays === Infinity ? prevMax + '+' : rangeStart + '–' + rangeEnd) + ' days<br>' + TIMING[i].fee + '%';
+    if (i === timing.segmentIndex) lbl.classList.add('active');
+    labels.appendChild(lbl);
+    if (TIMING[i].maxDays !== Infinity) prevMax = TIMING[i].maxDays;
+  }
+
+  results.classList.add('visible');
+}
+
+// Auto-format amount input
+document.getElementById('amount').addEventListener('input', function (e) {
+  const raw = this.value.replace(/[^0-9]/g, '');
+  if (raw) {
+    this.value = parseInt(raw).toLocaleString('en-US');
+  }
+  calculate();
+});
+
+document.getElementById('approval-date').addEventListener('change', calculate);
+</script>
+
+</body>
+</html>
