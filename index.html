@@ -220,6 +220,11 @@
   <input type="date" id="approval-date">
 </div>
 
+<div class="input-group" id="date-display" style="display:none;">
+  <label>Board approval date</label>
+  <div id="date-text" style="font-size:16px;font-weight:500;"></div>
+</div>
+
 <p class="error-text" id="error"></p>
 
 <div class="results" id="results">
@@ -304,6 +309,9 @@ if (presetDate) {
   document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('approval-date').value = presetDate;
     document.getElementById('date-group').style.display = 'none';
+    var d = new Date(presetDate + 'T00:00:00');
+    document.getElementById('date-text').textContent = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    document.getElementById('date-display').style.display = 'block';
   });
 }
 
