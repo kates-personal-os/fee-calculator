@@ -566,15 +566,18 @@ amountInput.addEventListener('input', function () {
   }
   calculate();
 });
-// Clean up leading zeros on blur
-amountInput.addEventListener('blur', function () {
-  var raw = this.value.replace(/[^0-9]/g, '');
+// Clean up leading zeros on blur/change
+function cleanupAmount() {
+  var raw = amountInput.value.replace(/[^0-9]/g, '');
   if (raw && parseInt(raw) > 0) {
-    this.value = '$' + parseInt(raw).toLocaleString('en-US');
-  } else if (!raw) {
-    this.value = '';
+    amountInput.value = '$' + parseInt(raw).toLocaleString('en-US');
+  } else if (!raw || parseInt(raw) === 0) {
+    amountInput.value = '';
   }
-});
+}
+amountInput.addEventListener('blur', cleanupAmount);
+amountInput.addEventListener('change', cleanupAmount);
+amountInput.addEventListener('focusout', cleanupAmount);
 
 document.getElementById('approval-date').addEventListener('change', calculate);
 </script>
