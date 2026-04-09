@@ -367,11 +367,6 @@ function calculate() {
   const totalPct = admissionFee + timing.fee;
   const feeAmount = amount * totalPct / 100;
 
-  document.getElementById('admission-fee').textContent = admissionFee + '%';
-  document.getElementById('timing-fee').textContent = timing.fee + '%';
-  document.getElementById('total-fee').textContent = totalPct + '%';
-  document.getElementById('fee-amount').textContent = formatUSD(feeAmount);
-
   // Next tier hint
   const nextTier = getNextTier(amount);
   const nextCard = document.getElementById('next-tier-card');
