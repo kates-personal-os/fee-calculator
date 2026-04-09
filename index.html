@@ -164,6 +164,12 @@
   .tier-strip {
     display: flex;
     gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .tier-hint {
+    font-size: 13px;
+    color: #a09f9c;
     margin-bottom: 20px;
   }
 
@@ -230,6 +236,7 @@
     .tier-pill.active { border-color: #9b9a97; background: #2f2f2f; }
     .tier-pill.active .tier-fee { color: #e3e2e0; }
     .tier-pill.active .tier-range { color: #9b9a97; }
+    .tier-hint { color: #666; }
     .timeline-segment { background: #444; }
     .timeline-segment.active { background: linear-gradient(to right, #2eaadc var(--progress, 0%), #444 var(--progress, 0%)); }
     .timeline-labels { color: #666; }
@@ -251,6 +258,7 @@
   html.dark .tier-pill.active { border-color: #9b9a97; background: #2f2f2f; }
   html.dark .tier-pill.active .tier-fee { color: #e3e2e0; }
   html.dark .tier-pill.active .tier-range { color: #9b9a97; }
+  html.dark .tier-hint { color: #666; }
   html.dark .timeline-segment { background: #444; }
   html.dark .timeline-segment.active { background: linear-gradient(to right, #2eaadc var(--progress, 0%), #444 var(--progress, 0%)); }
   html.dark .timeline-labels { color: #666; }
@@ -284,11 +292,7 @@
   <div id="tier-section">
     <div class="section-label">Admission fee by pledge amount</div>
     <div class="tier-strip" id="tier-strip"></div>
-  </div>
-
-  <div class="hint-card blue" id="next-tier-card" style="display:none;">
-    <div class="hint-title" id="next-tier-title"></div>
-    <div id="next-tier-text"></div>
+    <div class="tier-hint" id="tier-hint"></div>
   </div>
 
   <div class="hint-card" id="timing-card">
@@ -473,21 +477,13 @@ function calculate() {
     strip.appendChild(pill);
   }
 
-  // Next tier hint
+  // Tier hint line
   const nextTier = getNextTier(amount);
-  const nextCard = document.getElementById('next-tier-card');
+  const tierHint = document.getElementById('tier-hint');
   if (nextTier) {
-    nextCard.style.display = 'block';
-    document.getElementById('next-tier-title').textContent =
-      'Admission fee: ' + admissionFee + '%';
-    document.getElementById('next-tier-text').textContent =
-      'Add ' + formatUSD(nextTier.gap) + ' to reach ' + nextTier.nextFee + '% (at ' + formatUSD(nextTier.threshold) + ')';
+    tierHint.textContent = 'Your fee: ' + admissionFee + '%. Add ' + formatUSD(nextTier.gap) + ' to reach ' + nextTier.nextFee + '%';
   } else {
-    nextCard.style.display = 'block';
-    document.getElementById('next-tier-title').textContent =
-      'Admission fee: ' + admissionFee + '%';
-    document.getElementById('next-tier-text').textContent =
-      "You're at the lowest admission fee tier.";
+    tierHint.textContent = 'Your fee: ' + admissionFee + '% — lowest tier';
   }
 
   // Timing hint
