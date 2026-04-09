@@ -100,24 +100,12 @@
     line-height: 1.6;
   }
 
-  .hint-card.blue {
-    background: #e8f4f8;
-    color: #1a6b8a;
-  }
-
-  .hint-card.green {
-    background: #e9f7ef;
-    color: #1a7a4c;
-  }
-
-  .hint-card.orange {
-    background: #fdf2e9;
-    color: #9a5b13;
-  }
-
+  .hint-card.blue,
+  .hint-card.green,
+  .hint-card.orange,
   .hint-card.red {
-    background: #fde8e8;
-    color: #9a1313;
+    background: #f7f6f3;
+    color: #4a4a47;
   }
 
   .hint-title {
@@ -179,10 +167,7 @@
     .result-row + .result-row { border-color: #444; }
     .result-label { color: #9b9a97; }
     .total-row .result-label { color: #e3e2e0; }
-    .hint-card.blue { background: #1a2e3a; color: #7ec8e3; }
-    .hint-card.green { background: #1a2e24; color: #7ec8a0; }
-    .hint-card.orange { background: #2e261a; color: #e8c87e; }
-    .hint-card.red { background: #2e1a1a; color: #e87e7e; }
+    .hint-card.blue, .hint-card.green, .hint-card.orange, .hint-card.red { background: #3a3a3a; color: #b0b0ad; }
     .timeline-segment { background: #444; }
     .timeline-segment.active { background: linear-gradient(to right, #2eaadc var(--progress, 0%), #444 var(--progress, 0%)); }
     .timeline-labels { color: #666; }
@@ -196,10 +181,7 @@
   html.dark .result-row + .result-row { border-color: #444; }
   html.dark .result-label { color: #9b9a97; }
   html.dark .total-row .result-label { color: #e3e2e0; }
-  html.dark .hint-card.blue { background: #1a2e3a; color: #7ec8e3; }
-  html.dark .hint-card.green { background: #1a2e24; color: #7ec8a0; }
-  html.dark .hint-card.orange { background: #2e261a; color: #e8c87e; }
-  html.dark .hint-card.red { background: #2e1a1a; color: #e87e7e; }
+  html.dark .hint-card.blue, html.dark .hint-card.green, html.dark .hint-card.orange, html.dark .hint-card.red { background: #3a3a3a; color: #b0b0ad; }
   html.dark .timeline-segment { background: #444; }
   html.dark .timeline-segment.active { background: linear-gradient(to right, #2eaadc var(--progress, 0%), #444 var(--progress, 0%)); }
   html.dark .timeline-labels { color: #666; }
@@ -229,24 +211,6 @@
 
 <div class="results" id="results">
 
-  <div class="result-card">
-    <div class="result-row">
-      <span class="result-label">Admission fee</span>
-      <span class="result-value" id="admission-fee"></span>
-    </div>
-    <div class="result-row">
-      <span class="result-label">Timing fee</span>
-      <span class="result-value" id="timing-fee"></span>
-    </div>
-    <div class="result-row total-row">
-      <span class="result-label">Total fee</span>
-      <span class="result-value" id="total-fee"></span>
-    </div>
-    <div class="result-row total-row">
-      <span class="result-label">Fee amount</span>
-      <span class="result-value" id="fee-amount"></span>
-    </div>
-  </div>
 
   <div class="hint-card blue" id="next-tier-card" style="display:none;">
     <div class="hint-title" id="next-tier-title"></div>
