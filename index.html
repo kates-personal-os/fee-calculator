@@ -152,6 +152,61 @@
     font-weight: 600;
   }
 
+  .section-label {
+    font-size: 12px;
+    color: #a09f9c;
+    margin-bottom: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .tier-strip {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .tier-pill {
+    flex: 1;
+    border: 1.5px solid #e3e2e0;
+    border-radius: 8px;
+    padding: 10px 4px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .tier-pill .tier-fee {
+    font-size: 15px;
+    font-weight: 600;
+    color: #787774;
+  }
+
+  .tier-pill .tier-range {
+    font-size: 11px;
+    color: #a09f9c;
+    margin-top: 2px;
+  }
+
+  .tier-pill.active {
+    border-color: #787774;
+    background: #f7f6f3;
+  }
+
+  .tier-pill.active .tier-fee {
+    color: #37352f;
+  }
+
+  .tier-pill.active .tier-range {
+    color: #787774;
+  }
+
+  .tier-pill.passed {
+    border-color: #e3e2e0;
+    background: transparent;
+    opacity: 0.5;
+  }
+
   .error-text {
     color: #eb5757;
     font-size: 13px;
@@ -168,6 +223,13 @@
     .result-label { color: #9b9a97; }
     .total-row .result-label { color: #e3e2e0; }
     .hint-card.blue, .hint-card.green, .hint-card.orange, .hint-card.red { background: #3a3a3a; color: #b0b0ad; }
+    .section-label { color: #666; }
+    .tier-pill { border-color: #444; }
+    .tier-pill .tier-fee { color: #9b9a97; }
+    .tier-pill .tier-range { color: #666; }
+    .tier-pill.active { border-color: #9b9a97; background: #2f2f2f; }
+    .tier-pill.active .tier-fee { color: #e3e2e0; }
+    .tier-pill.active .tier-range { color: #9b9a97; }
     .timeline-segment { background: #444; }
     .timeline-segment.active { background: linear-gradient(to right, #2eaadc var(--progress, 0%), #444 var(--progress, 0%)); }
     .timeline-labels { color: #666; }
@@ -182,6 +244,13 @@
   html.dark .result-label { color: #9b9a97; }
   html.dark .total-row .result-label { color: #e3e2e0; }
   html.dark .hint-card.blue, html.dark .hint-card.green, html.dark .hint-card.orange, html.dark .hint-card.red { background: #3a3a3a; color: #b0b0ad; }
+  html.dark .section-label { color: #666; }
+  html.dark .tier-pill { border-color: #444; }
+  html.dark .tier-pill .tier-fee { color: #9b9a97; }
+  html.dark .tier-pill .tier-range { color: #666; }
+  html.dark .tier-pill.active { border-color: #9b9a97; background: #2f2f2f; }
+  html.dark .tier-pill.active .tier-fee { color: #e3e2e0; }
+  html.dark .tier-pill.active .tier-range { color: #9b9a97; }
   html.dark .timeline-segment { background: #444; }
   html.dark .timeline-segment.active { background: linear-gradient(to right, #2eaadc var(--progress, 0%), #444 var(--progress, 0%)); }
   html.dark .timeline-labels { color: #666; }
@@ -212,6 +281,11 @@
 <div class="results" id="results">
 
 
+  <div id="tier-section">
+    <div class="section-label">Admission fee by pledge amount</div>
+    <div class="tier-strip" id="tier-strip"></div>
+  </div>
+
   <div class="hint-card blue" id="next-tier-card" style="display:none;">
     <div class="hint-title" id="next-tier-title"></div>
     <div id="next-tier-text"></div>
@@ -223,6 +297,7 @@
   </div>
 
   <div id="timeline-section">
+    <div class="section-label">Timing fee by days since board approval</div>
     <div class="timeline" id="timeline-bar"></div>
     <div class="timeline-labels" id="timeline-labels"></div>
   </div>
@@ -337,6 +412,12 @@ function formatUSD(n) {
   return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
+function formatCompact(n) {
+  if (n >= 1e6) return '$' + (n / 1e6) + 'M';
+  if (n >= 1e3) return '$' + (n / 1e3) + 'K';
+  return '$' + n;
+}
+
 function parseAmount(str) {
   return parseFloat(str.replace(/[^0-9.]/g, ''));
 }
@@ -366,6 +447,31 @@ function calculate() {
   const timing = getTimingInfo(dateVal);
   const totalPct = admissionFee + timing.fee;
   const feeAmount = amount * totalPct / 100;
+
+  // Tier strip
+  const strip = document.getElementById('tier-strip');
+  strip.innerHTML = '';
+  for (let i = 0; i < TIERS.length; i++) {
+    const pill = document.createElement('div');
+    pill.className = 'tier-pill';
+    const tierFee = TIERS[i].fee;
+    const isActive = tierFee === admissionFee;
+    const isPassed = TIERS[i].fee > admissionFee;
+    if (isActive) pill.classList.add('active');
+    if (isPassed) pill.classList.add('passed');
+
+    let rangeLabel;
+    if (i === 0) {
+      rangeLabel = '<' + formatCompact(TIERS[0].max);
+    } else if (TIERS[i].max === Infinity) {
+      rangeLabel = '≥' + formatCompact(TIERS[i - 1].max);
+    } else {
+      rangeLabel = '≥' + formatCompact(TIERS[i - 1].max);
+    }
+
+    pill.innerHTML = '<div class="tier-fee">' + tierFee + '%</div><div class="tier-range">' + rangeLabel + '</div>';
+    strip.appendChild(pill);
+  }
 
   // Next tier hint
   const nextTier = getNextTier(amount);
