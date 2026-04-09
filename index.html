@@ -271,7 +271,7 @@
 
 <div class="input-group">
   <label>Your participation amount (USD)</label>
-  <input type="text" id="amount" placeholder="e.g. 6,000,000" inputmode="numeric">
+  <input type="text" id="amount" placeholder="e.g. $6,000,000" inputmode="numeric">
 </div>
 
 <div class="input-group" id="date-group">
@@ -348,11 +348,22 @@ if (!TIERS.length || !TIMING.length) {
 
 const presetAmount = params.get('amount');
 
-if (presetDate) {
+// Parse date from various formats: "2026-02-10", "10 February 2026", "February 10, 2026"
+function normalizeDate(str) {
+  if (!str) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  var d = new Date(str);
+  if (!isNaN(d)) return d.toISOString().split('T')[0];
+  return null;
+}
+
+const normalizedDate = normalizeDate(presetDate);
+
+if (normalizedDate) {
   document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('approval-date').value = presetDate;
+    document.getElementById('approval-date').value = normalizedDate;
     document.getElementById('date-group').style.display = 'none';
-    var d = new Date(presetDate + 'T00:00:00');
+    var d = new Date(normalizedDate + 'T00:00:00');
     document.getElementById('date-text').textContent = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     document.getElementById('date-display').style.display = 'block';
   });
@@ -360,9 +371,9 @@ if (presetDate) {
 
 if (presetAmount) {
   document.addEventListener('DOMContentLoaded', function() {
-    const num = parseInt(presetAmount);
+    var num = parseInt(presetAmount.replace(/[^0-9]/g, ''));
     if (num > 0) {
-      document.getElementById('amount').value = num.toLocaleString('en-US');
+      document.getElementById('amount').value = '$' + num.toLocaleString('en-US');
       calculate();
     }
   });
@@ -537,9 +548,15 @@ function calculate() {
 
 // Auto-format amount input
 document.getElementById('amount').addEventListener('input', function (e) {
-  const raw = this.value.replace(/[^0-9]/g, '');
+  var cursorPos = this.selectionStart;
+  var beforeLen = this.value.length;
+  var raw = this.value.replace(/[^0-9]/g, '');
   if (raw) {
-    this.value = parseInt(raw).toLocaleString('en-US');
+    this.value = '$' + parseInt(raw).toLocaleString('en-US');
+    var diff = this.value.length - beforeLen;
+    this.setSelectionRange(cursorPos + diff, cursorPos + diff);
+  } else {
+    this.value = '';
   }
   calculate();
 });
