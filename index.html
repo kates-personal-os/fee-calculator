@@ -243,26 +243,6 @@
     label { color: #9b9a97; }
   }
 
-  html.dark body { background: #191919; color: #e3e2e0; }
-  html.dark input { background: #2f2f2f; border-color: #444; color: #e3e2e0; }
-  html.dark input:focus { border-color: #2eaadc; box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.25); }
-  html.dark .result-card { background: #2f2f2f; }
-  html.dark .result-row + .result-row { border-color: #444; }
-  html.dark .result-label { color: #9b9a97; }
-  html.dark .total-row .result-label { color: #e3e2e0; }
-  html.dark .hint-card.blue, html.dark .hint-card.green, html.dark .hint-card.orange, html.dark .hint-card.red { background: #3a3a3a; color: #b0b0ad; }
-  html.dark .section-label { color: #666; }
-  html.dark .tier-pill { border-color: #444; }
-  html.dark .tier-pill .tier-fee { color: #9b9a97; }
-  html.dark .tier-pill .tier-range { color: #666; }
-  html.dark .tier-pill.active { border-color: #9b9a97; background: #2f2f2f; }
-  html.dark .tier-pill.active .tier-fee { color: #e3e2e0; }
-  html.dark .tier-pill.active .tier-range { color: #9b9a97; }
-  html.dark .tier-hint { color: #666; }
-  html.dark .timeline-segment { background: #444; }
-  html.dark .timeline-segment.active { background: linear-gradient(to right, #2eaadc var(--progress, 0%), #444 var(--progress, 0%)); }
-  html.dark .timeline-labels { color: #666; }
-  html.dark label { color: #9b9a97; }
 </style>
 </head>
 <body>
@@ -337,10 +317,6 @@ const TIERS = parseTiers(params.get('tiers'));
 const TIMING = parseTiming(params.get('timing'));
 const presetDate = params.get('date');
 const pageTitle = params.get('title');
-
-if (params.get('theme') === 'dark') {
-  document.documentElement.classList.add('dark');
-}
 
 if (!TIERS.length || !TIMING.length) {
   document.body.innerHTML = '<p style="color:#787774;padding:40px;text-align:center;">Calculator not configured.</p>';
