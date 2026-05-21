@@ -381,9 +381,13 @@ function getNextTier(amount) {
 }
 
 function getTimingInfo(approvalDate) {
+  // Calendar-date diff in local time. Avoids the UTC-vs-local drift that
+  // otherwise shifts the day counter in the Paris small-hours window.
+  const [y, m, d] = approvalDate.split('-').map(Number);
+  const approvalUTC = Date.UTC(y, m - 1, d);
   const now = new Date();
-  const approval = new Date(approvalDate);
-  const days = Math.floor((now - approval) / (1000 * 60 * 60 * 24));
+  const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((todayUTC - approvalUTC) / 86400000);
 
   let current = TIMING[0];
   let segmentIndex = 0;
