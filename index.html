@@ -161,6 +161,14 @@
     letter-spacing: 0.03em;
   }
 
+  .stage-section {
+    margin-bottom: 24px;
+  }
+
+  .stage-section.preview {
+    opacity: 0.55;
+  }
+
   .tier-strip {
     display: flex;
     gap: 6px;
@@ -254,20 +262,29 @@
   <input type="text" id="amount" placeholder="e.g. $6,000,000" inputmode="numeric">
 </div>
 
-<div class="input-group" id="date-group">
-  <label>Board approval date</label>
+<div class="input-group" id="approval-date-group">
+  <label id="approval-date-label">Admission Board approval date</label>
   <input type="date" id="approval-date">
 </div>
 
-<div class="input-group" id="date-display" style="display:none;">
-  <label>Board approval date</label>
-  <div id="date-text" style="font-size:16px;font-weight:500;"></div>
+<div class="input-group" id="approval-date-display" style="display:none;">
+  <label id="approval-date-display-label">Admission Board approval date</label>
+  <div id="approval-date-text" style="font-size:16px;font-weight:500;"></div>
+</div>
+
+<div class="input-group" id="sign-date-group" style="display:none;">
+  <label>Forward contract signing date (leave empty if not yet signed)</label>
+  <input type="date" id="sign-date">
+</div>
+
+<div class="input-group" id="sign-date-display" style="display:none;">
+  <label>Forward contract signing date</label>
+  <div id="sign-date-text" style="font-size:16px;font-weight:500;"></div>
 </div>
 
 <p class="error-text" id="error"></p>
 
 <div class="results" id="results">
-
 
   <div id="tier-section">
     <div class="section-label">Admission fee by pledge amount</div>
@@ -280,7 +297,19 @@
     <div id="timing-text"></div>
   </div>
 
-  <div id="timeline-section">
+  <div class="stage-section" id="stage1-section">
+    <div class="section-label" id="stage1-label">Commitment timing fee</div>
+    <div class="timeline" id="stage1-bar"></div>
+    <div class="timeline-labels" id="stage1-labels"></div>
+  </div>
+
+  <div class="stage-section" id="stage2-section">
+    <div class="section-label" id="stage2-label">Activation timing fee</div>
+    <div class="timeline" id="stage2-bar"></div>
+    <div class="timeline-labels" id="stage2-labels"></div>
+  </div>
+
+  <div id="legacy-timeline-section" style="display:none;">
     <div class="section-label">Timing fee by days since board approval</div>
     <div class="timeline" id="timeline-bar"></div>
     <div class="timeline-labels" id="timeline-labels"></div>
@@ -289,11 +318,18 @@
 </div>
 
 <script>
-// Config is passed via URL parameters:
+// Config is passed via URL parameters.
+//
+// Two-stage (current model):
 // ?tiers=5000000:15,7000000:12,10000000:9.5,12000000:7.5,15000000:7.25,0:7
-// &timing=90:0,150:2.5,240:3.75,0:5
-// &date=2026-03-15
+// &stage1=90:0,120:1,150:2,0:3       (Commitment: days-since-admission → cumulative fee %)
+// &stage2=45:0,90:1,0:2              (Activation: days-since-signing  → cumulative fee %)
+// &date=2026-03-15                   (Admission Board approval date)
+// &signdate=2026-04-20               (Forward contract signing date, optional)
 // &title=Your+Fee+Estimate
+//
+// Legacy single-stage (still supported for old embeds):
+// ?tiers=...&timing=90:0,150:2.5,240:3.75,0:5&date=2026-03-15
 
 const params = new URLSearchParams(window.location.search);
 
@@ -314,17 +350,22 @@ function parseTiming(str) {
 }
 
 const TIERS = parseTiers(params.get('tiers'));
-const TIMING = parseTiming(params.get('timing'));
+const STAGE1 = parseTiming(params.get('stage1'));
+const STAGE2 = parseTiming(params.get('stage2'));
+const LEGACY_TIMING = parseTiming(params.get('timing'));
 const presetDate = params.get('date');
+const presetSignDate = params.get('signdate');
 const pageTitle = params.get('title');
 
-if (!TIERS.length || !TIMING.length) {
+const TWO_STAGE = STAGE1.length > 0;
+const HAS_LEGACY = LEGACY_TIMING.length > 0;
+
+if (!TIERS.length || (!TWO_STAGE && !HAS_LEGACY)) {
   document.body.innerHTML = '<p style="color:#787774;padding:40px;text-align:center;">Calculator not configured.</p>';
 }
 
 const presetAmount = params.get('amount');
 
-// Parse date from various formats: "2026-02-10", "10 February 2026", "February 10, 2026"
 function normalizeDate(str) {
   if (!str) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
@@ -333,40 +374,60 @@ function normalizeDate(str) {
   return null;
 }
 
-const normalizedDate = normalizeDate(presetDate);
+const normalizedApprovalDate = normalizeDate(presetDate);
+const normalizedSignDate = normalizeDate(presetSignDate);
 
-if (normalizedDate) {
-  document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('approval-date').value = normalizedDate;
-    document.getElementById('date-group').style.display = 'none';
-    var d = new Date(normalizedDate + 'T00:00:00');
-    document.getElementById('date-text').textContent = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    document.getElementById('date-display').style.display = 'block';
-  });
+function formatDateForDisplay(isoDate) {
+  var d = new Date(isoDate + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-if (presetAmount) {
-  document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
+  // Legacy mode hides stage sections, shows single legacy timeline + legacy label
+  if (!TWO_STAGE) {
+    document.getElementById('stage1-section').style.display = 'none';
+    document.getElementById('stage2-section').style.display = 'none';
+    document.getElementById('legacy-timeline-section').style.display = 'block';
+    document.getElementById('approval-date-label').textContent = 'Board approval date';
+    document.getElementById('approval-date-display-label').textContent = 'Board approval date';
+  }
+  // Two-stage mode: sign-date input + Activation section are hidden by default;
+  // they only appear when a valid signdate URL param is provided.
+
+  if (normalizedApprovalDate) {
+    document.getElementById('approval-date').value = normalizedApprovalDate;
+    document.getElementById('approval-date-group').style.display = 'none';
+    document.getElementById('approval-date-text').textContent = formatDateForDisplay(normalizedApprovalDate);
+    document.getElementById('approval-date-display').style.display = 'block';
+  }
+
+  if (normalizedSignDate && TWO_STAGE) {
+    document.getElementById('sign-date').value = normalizedSignDate;
+    document.getElementById('sign-date-group').style.display = 'none';
+    document.getElementById('sign-date-text').textContent = formatDateForDisplay(normalizedSignDate);
+    document.getElementById('sign-date-display').style.display = 'block';
+  }
+
+  if (presetAmount) {
     var num = parseInt(presetAmount.replace(/[^0-9]/g, ''));
     if (num > 0) {
       document.getElementById('amount').value = '$' + num.toLocaleString('en-US');
-      calculate();
     }
-  });
-}
+  }
 
-if (pageTitle) {
-  document.addEventListener('DOMContentLoaded', function() {
+  if (pageTitle) {
     const h = document.getElementById('page-title');
     if (h) { h.textContent = pageTitle; h.style.display = 'block'; }
-  });
-}
+  }
+
+  calculate();
+});
 
 function getAdmissionFee(amount) {
   for (const t of TIERS) {
     if (amount < t.max) return t.fee;
   }
-  return 7;
+  return TIERS.length ? TIERS[TIERS.length - 1].fee : 0;
 }
 
 function getNextTier(amount) {
@@ -380,27 +441,29 @@ function getNextTier(amount) {
   return null;
 }
 
-function getTimingInfo(approvalDate) {
-  // Calendar-date diff in local time. Avoids the UTC-vs-local drift that
-  // otherwise shifts the day counter in the Paris small-hours window.
-  const [y, m, d] = approvalDate.split('-').map(Number);
-  const approvalUTC = Date.UTC(y, m - 1, d);
-  const now = new Date();
-  const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  const days = Math.round((todayUTC - approvalUTC) / 86400000);
+// Calendar-date diff in local time. Avoids UTC drift in Paris small-hours.
+function daysBetween(fromISO, toISO) {
+  const [fy, fm, fd] = fromISO.split('-').map(Number);
+  const [ty, tm, td] = toISO.split('-').map(Number);
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000);
+}
 
-  let current = TIMING[0];
-  let segmentIndex = 0;
-  for (let i = 0; i < TIMING.length; i++) {
-    if (days <= TIMING[i].maxDays || i === TIMING.length - 1) {
-      current = TIMING[i];
-      segmentIndex = i;
-      break;
+function daysSinceLocal(fromISO) {
+  const now = new Date();
+  const today = now.getFullYear() + '-'
+    + String(now.getMonth() + 1).padStart(2, '0') + '-'
+    + String(now.getDate()).padStart(2, '0');
+  return daysBetween(fromISO, today);
+}
+
+function getSegmentForDays(curve, days) {
+  for (let i = 0; i < curve.length; i++) {
+    if (days <= curve[i].maxDays || i === curve.length - 1) {
+      const daysLeft = curve[i].maxDays === Infinity ? 0 : curve[i].maxDays - days;
+      return { fee: curve[i].fee, daysLeft, segmentIndex: i };
     }
   }
-
-  const daysLeft = current.maxDays === Infinity ? 0 : current.maxDays - days;
-  return { days, fee: current.fee, daysLeft, segmentIndex };
+  return { fee: 0, daysLeft: 0, segmentIndex: 0 };
 }
 
 function formatUSD(n) {
@@ -417,9 +480,43 @@ function parseAmount(str) {
   return parseFloat(str.replace(/[^0-9.]/g, ''));
 }
 
+function renderTimeline(curve, segmentIndex, daysInStage, barEl, labelsEl, isActiveStage) {
+  barEl.innerHTML = '';
+  labelsEl.innerHTML = '';
+  let prevMax = 0;
+  for (let i = 0; i < curve.length; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'timeline-segment';
+    if (segmentIndex !== null) {
+      if (i < segmentIndex) {
+        seg.classList.add('passed');
+      } else if (i === segmentIndex && isActiveStage) {
+        seg.classList.add('active');
+        const segStart = i === 0 ? 0 : curve[i - 1].maxDays;
+        const segEnd = curve[i].maxDays === Infinity ? segStart + 90 : curve[i].maxDays;
+        const progress = Math.min(100, Math.max(0, (daysInStage - segStart) / (segEnd - segStart) * 100));
+        seg.style.setProperty('--progress', progress + '%');
+      } else if (i === segmentIndex && !isActiveStage) {
+        // Locked stage — show its final landing segment as passed
+        seg.classList.add('passed');
+      }
+    }
+    barEl.appendChild(seg);
+
+    const lbl = document.createElement('span');
+    const rangeStart = prevMax === 0 ? '0' : (prevMax + 1);
+    const rangeEnd = curve[i].maxDays === Infinity ? '+' : curve[i].maxDays;
+    lbl.innerHTML = (curve[i].maxDays === Infinity ? prevMax + '+' : rangeStart + '–' + rangeEnd) + ' days<br>' + curve[i].fee + '%';
+    if (segmentIndex !== null && i === segmentIndex && isActiveStage) lbl.classList.add('active');
+    labelsEl.appendChild(lbl);
+    if (curve[i].maxDays !== Infinity) prevMax = curve[i].maxDays;
+  }
+}
+
 function calculate() {
   const raw = document.getElementById('amount').value;
-  const dateVal = document.getElementById('approval-date').value;
+  const approvalDateVal = document.getElementById('approval-date').value;
+  const signDateVal = TWO_STAGE ? document.getElementById('sign-date').value : '';
   const results = document.getElementById('results');
   const error = document.getElementById('error');
 
@@ -429,9 +526,9 @@ function calculate() {
     error.style.display = 'none';
     return;
   }
-  if (!dateVal) {
+  if (!approvalDateVal) {
     results.classList.remove('visible');
-    error.textContent = 'Please select a board approval date.';
+    error.textContent = 'Please select the ' + (TWO_STAGE ? 'Admission Board approval' : 'board approval') + ' date.';
     error.style.display = 'block';
     return;
   }
@@ -439,9 +536,6 @@ function calculate() {
   error.style.display = 'none';
 
   const admissionFee = getAdmissionFee(amount);
-  const timing = getTimingInfo(dateVal);
-  const totalPct = admissionFee + timing.fee;
-  const feeAmount = amount * totalPct / 100;
 
   // Tier strip
   const strip = document.getElementById('tier-strip');
@@ -458,8 +552,6 @@ function calculate() {
     let rangeLabel;
     if (i === 0) {
       rangeLabel = '<' + formatCompact(TIERS[0].max);
-    } else if (TIERS[i].max === Infinity) {
-      rangeLabel = '≥' + formatCompact(TIERS[i - 1].max);
     } else {
       rangeLabel = '≥' + formatCompact(TIERS[i - 1].max);
     }
@@ -468,7 +560,6 @@ function calculate() {
     strip.appendChild(pill);
   }
 
-  // Tier hint line
   const nextTier = getNextTier(amount);
   const tierHint = document.getElementById('tier-hint');
   if (nextTier) {
@@ -477,50 +568,103 @@ function calculate() {
     tierHint.textContent = 'Your fee: ' + admissionFee + '% — lowest tier';
   }
 
-  // Timing hint
   const timingCard = document.getElementById('timing-card');
   const timingTitle = document.getElementById('timing-title');
   const timingText = document.getElementById('timing-text');
-
   timingCard.className = 'hint-card';
-  const isFirst = timing.segmentIndex === 0;
-  const isLast = timing.segmentIndex === TIMING.length - 1;
-  timingCard.classList.add(isFirst ? 'green' : isLast ? 'red' : 'orange');
-  timingTitle.textContent = 'Timing fee: ' + timing.fee + '%';
-  if (isLast) {
-    timingText.textContent = 'Maximum timing fee applies.';
-  } else {
-    const nextFee = TIMING[timing.segmentIndex + 1].fee;
-    timingText.textContent = timing.daysLeft + ' days' + (isFirst ? ' left to close with no timing fee.' : ' until fee increases to ' + nextFee + '%.');
-  }
 
-  // Timeline
-  const bar = document.getElementById('timeline-bar');
-  const labels = document.getElementById('timeline-labels');
-  bar.innerHTML = '';
-  labels.innerHTML = '';
-  let prevMax = 0;
-  for (let i = 0; i < TIMING.length; i++) {
-    const seg = document.createElement('div');
-    seg.className = 'timeline-segment';
-    if (i < timing.segmentIndex) {
-      seg.classList.add('passed');
-    } else if (i === timing.segmentIndex) {
-      seg.classList.add('active');
-      const segStart = i === 0 ? 0 : TIMING[i - 1].maxDays;
-      const segEnd = TIMING[i].maxDays === Infinity ? segStart + 90 : TIMING[i].maxDays;
-      const progress = Math.min(100, Math.max(0, (timing.days - segStart) / (segEnd - segStart) * 100));
-      seg.style.setProperty('--progress', progress + '%');
+  if (TWO_STAGE) {
+    // Two-stage path
+    const stage1Section = document.getElementById('stage1-section');
+    const stage2Section = document.getElementById('stage2-section');
+
+    const inStage2 = !!signDateVal;
+
+    let stage1Fee, stage1Segment, stage1DaysForRender, stage1ActiveForRender;
+    if (inStage2) {
+      // Stage 1 locked: fee = what was applied at the signing date
+      const daysToSign = Math.max(0, daysBetween(approvalDateVal, signDateVal));
+      const lockedSeg = getSegmentForDays(STAGE1, daysToSign);
+      stage1Fee = lockedSeg.fee;
+      stage1Segment = lockedSeg.segmentIndex;
+      stage1DaysForRender = daysToSign;
+      stage1ActiveForRender = false;
+    } else {
+      const daysFromApproval = Math.max(0, daysSinceLocal(approvalDateVal));
+      const liveSeg = getSegmentForDays(STAGE1, daysFromApproval);
+      stage1Fee = liveSeg.fee;
+      stage1Segment = liveSeg.segmentIndex;
+      stage1DaysForRender = daysFromApproval;
+      stage1ActiveForRender = true;
     }
-    bar.appendChild(seg);
 
-    const lbl = document.createElement('span');
-    const rangeStart = prevMax === 0 ? '0' : (prevMax + 1);
-    const rangeEnd = TIMING[i].maxDays === Infinity ? '+' : TIMING[i].maxDays;
-    lbl.innerHTML = (TIMING[i].maxDays === Infinity ? prevMax + '+' : rangeStart + '–' + rangeEnd) + ' days<br>' + TIMING[i].fee + '%';
-    if (i === timing.segmentIndex) lbl.classList.add('active');
-    labels.appendChild(lbl);
-    if (TIMING[i].maxDays !== Infinity) prevMax = TIMING[i].maxDays;
+    let stage2Fee = 0;
+    let stage2Segment = null;
+    let stage2Days = 0;
+    if (inStage2 && STAGE2.length) {
+      stage2Days = Math.max(0, daysSinceLocal(signDateVal));
+      const liveSeg2 = getSegmentForDays(STAGE2, stage2Days);
+      stage2Fee = liveSeg2.fee;
+      stage2Segment = liveSeg2.segmentIndex;
+    }
+
+    const totalTiming = stage1Fee + stage2Fee;
+    timingTitle.textContent = 'Timing fee: ' + totalTiming + '%' + (inStage2 ? ' (Commitment: ' + stage1Fee + '% · Activation: ' + stage2Fee + '%)' : '');
+
+    if (inStage2) {
+      if (STAGE2.length && stage2Segment === STAGE2.length - 1) {
+        timingText.textContent = 'Activation at maximum timing fee.';
+      } else if (STAGE2.length) {
+        const next2 = STAGE2[stage2Segment + 1];
+        const daysLeft2 = STAGE2[stage2Segment].maxDays - stage2Days;
+        timingText.textContent = 'Activation: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%.';
+      } else {
+        timingText.textContent = 'Activation not configured.';
+      }
+    } else {
+      const isLast1 = stage1Segment === STAGE1.length - 1;
+      if (isLast1) {
+        timingText.textContent = 'Commitment at maximum timing fee.';
+      } else {
+        const next1 = STAGE1[stage1Segment + 1];
+        const daysLeft1 = STAGE1[stage1Segment].maxDays - stage1DaysForRender;
+        const isFirst1 = stage1Segment === 0;
+        timingText.textContent = 'Commitment: ' + daysLeft1 + ' days' + (isFirst1 ? ' left with no timing fee.' : ' until fee increases to ' + next1.fee + '%.');
+      }
+    }
+
+    timingCard.classList.add(totalTiming === 0 ? 'green' : (totalTiming >= (STAGE1[STAGE1.length - 1].fee + (STAGE2.length ? STAGE2[STAGE2.length - 1].fee : 0)) ? 'red' : 'orange'));
+
+    renderTimeline(STAGE1, stage1Segment, stage1DaysForRender, document.getElementById('stage1-bar'), document.getElementById('stage1-labels'), stage1ActiveForRender);
+    stage1Section.classList.remove('preview');
+
+    if (STAGE2.length) {
+      if (inStage2) {
+        renderTimeline(STAGE2, stage2Segment, stage2Days, document.getElementById('stage2-bar'), document.getElementById('stage2-labels'), true);
+        stage2Section.classList.remove('preview');
+      } else {
+        renderTimeline(STAGE2, null, 0, document.getElementById('stage2-bar'), document.getElementById('stage2-labels'), false);
+        stage2Section.classList.add('preview');
+      }
+      stage2Section.style.display = 'block';
+    } else {
+      stage2Section.style.display = 'none';
+    }
+  } else {
+    // Legacy single-stage path — unchanged behavior
+    const daysFromApproval = Math.max(0, daysSinceLocal(approvalDateVal));
+    const liveSeg = getSegmentForDays(LEGACY_TIMING, daysFromApproval);
+    const isFirst = liveSeg.segmentIndex === 0;
+    const isLast = liveSeg.segmentIndex === LEGACY_TIMING.length - 1;
+    timingCard.classList.add(isFirst ? 'green' : isLast ? 'red' : 'orange');
+    timingTitle.textContent = 'Timing fee: ' + liveSeg.fee + '%';
+    if (isLast) {
+      timingText.textContent = 'Maximum timing fee applies.';
+    } else {
+      const nextFee = LEGACY_TIMING[liveSeg.segmentIndex + 1].fee;
+      timingText.textContent = liveSeg.daysLeft + ' days' + (isFirst ? ' left to close with no timing fee.' : ' until fee increases to ' + nextFee + '%.');
+    }
+    renderTimeline(LEGACY_TIMING, liveSeg.segmentIndex, daysFromApproval, document.getElementById('timeline-bar'), document.getElementById('timeline-labels'), true);
   }
 
   results.classList.add('visible');
@@ -533,7 +677,6 @@ amountInput.addEventListener('input', function () {
   var beforeLen = this.value.length;
   var raw = this.value.replace(/[^0-9]/g, '');
   if (raw) {
-    // Format without parseInt to preserve digits like "0007000000"
     var parts = [];
     for (var i = raw.length; i > 0; i -= 3) {
       parts.unshift(raw.substring(Math.max(0, i - 3), i));
@@ -546,7 +689,6 @@ amountInput.addEventListener('input', function () {
   }
   calculate();
 });
-// Clean up leading zeros on blur/change
 function cleanupAmount() {
   var raw = amountInput.value.replace(/[^0-9]/g, '');
   if (raw && parseInt(raw) > 0) {
@@ -560,6 +702,7 @@ amountInput.addEventListener('change', cleanupAmount);
 amountInput.addEventListener('focusout', cleanupAmount);
 
 document.getElementById('approval-date').addEventListener('change', calculate);
+document.getElementById('sign-date').addEventListener('change', calculate);
 </script>
 
 </body>
