@@ -298,13 +298,13 @@
   </div>
 
   <div class="stage-section" id="stage1-section">
-    <div class="section-label" id="stage1-label">Commitment timing fee</div>
+    <div class="section-label" id="stage1-label">Commitment stage timing fee</div>
     <div class="timeline" id="stage1-bar"></div>
     <div class="timeline-labels" id="stage1-labels"></div>
   </div>
 
   <div class="stage-section" id="stage2-section">
-    <div class="section-label" id="stage2-label">Activation timing fee</div>
+    <div class="section-label" id="stage2-label">Activation stage timing fee</div>
     <div class="timeline" id="stage2-bar"></div>
     <div class="timeline-labels" id="stage2-labels"></div>
   </div>
@@ -609,27 +609,27 @@ function calculate() {
     }
 
     const totalTiming = stage1Fee + stage2Fee;
-    timingTitle.textContent = 'Timing fee: ' + totalTiming + '%' + (inStage2 ? ' (Commitment: ' + stage1Fee + '% · Activation: ' + stage2Fee + '%)' : '');
+    timingTitle.textContent = 'Timing fee: ' + totalTiming + '%' + (inStage2 ? ' (Commitment stage: ' + stage1Fee + '% · Activation stage: ' + stage2Fee + '%)' : '');
 
     if (inStage2) {
       if (STAGE2.length && stage2Segment === STAGE2.length - 1) {
-        timingText.textContent = 'Activation at maximum timing fee.';
+        timingText.textContent = 'Activation stage at maximum timing fee.';
       } else if (STAGE2.length) {
         const next2 = STAGE2[stage2Segment + 1];
         const daysLeft2 = STAGE2[stage2Segment].maxDays - stage2Days;
-        timingText.textContent = 'Activation: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%.';
+        timingText.textContent = 'Activation stage: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%.';
       } else {
-        timingText.textContent = 'Activation not configured.';
+        timingText.textContent = 'Activation stage not configured.';
       }
     } else {
       const isLast1 = stage1Segment === STAGE1.length - 1;
       if (isLast1) {
-        timingText.textContent = 'Commitment at maximum timing fee.';
+        timingText.textContent = 'Commitment stage at maximum timing fee.';
       } else {
         const next1 = STAGE1[stage1Segment + 1];
         const daysLeft1 = STAGE1[stage1Segment].maxDays - stage1DaysForRender;
         const isFirst1 = stage1Segment === 0;
-        timingText.textContent = 'Commitment: ' + daysLeft1 + ' days' + (isFirst1 ? ' left with no timing fee.' : ' until fee increases to ' + next1.fee + '%.');
+        timingText.textContent = 'Commitment stage: ' + daysLeft1 + ' days' + (isFirst1 ? ' left with no timing fee.' : ' until fee increases to ' + next1.fee + '%.');
       }
     }
 
