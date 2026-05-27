@@ -298,19 +298,19 @@
   </div>
 
   <div class="stage-section" id="stage1-section">
-    <div class="section-label" id="stage1-label">Commitment stage timing fee</div>
+    <div class="section-label" id="stage1-label">Commitment stage deal closing fee</div>
     <div class="timeline" id="stage1-bar"></div>
     <div class="timeline-labels" id="stage1-labels"></div>
   </div>
 
   <div class="stage-section" id="stage2-section">
-    <div class="section-label" id="stage2-label">Activation stage timing fee</div>
+    <div class="section-label" id="stage2-label">Activation stage deal closing fee</div>
     <div class="timeline" id="stage2-bar"></div>
     <div class="timeline-labels" id="stage2-labels"></div>
   </div>
 
   <div id="legacy-timeline-section" style="display:none;">
-    <div class="section-label">Timing fee by days since board approval</div>
+    <div class="section-label">Deal closing fee by days since board approval</div>
     <div class="timeline" id="timeline-bar"></div>
     <div class="timeline-labels" id="timeline-labels"></div>
   </div>
@@ -609,11 +609,11 @@ function calculate() {
     }
 
     const totalTiming = stage1Fee + stage2Fee;
-    timingTitle.textContent = 'Timing fee: ' + totalTiming + '%' + (inStage2 ? ' (Commitment stage: ' + stage1Fee + '% · Activation stage: ' + stage2Fee + '%)' : '');
+    timingTitle.textContent = 'Deal closing fee: ' + totalTiming + '%' + (inStage2 ? ' (Commitment stage: ' + stage1Fee + '% · Activation stage: ' + stage2Fee + '%)' : '');
 
     if (inStage2) {
       if (STAGE2.length && stage2Segment === STAGE2.length - 1) {
-        timingText.textContent = 'Activation stage at maximum timing fee.';
+        timingText.textContent = 'Activation stage at maximum deal closing fee.';
       } else if (STAGE2.length) {
         const next2 = STAGE2[stage2Segment + 1];
         const daysLeft2 = STAGE2[stage2Segment].maxDays - stage2Days;
@@ -624,12 +624,12 @@ function calculate() {
     } else {
       const isLast1 = stage1Segment === STAGE1.length - 1;
       if (isLast1) {
-        timingText.textContent = 'Commitment stage at maximum timing fee.';
+        timingText.textContent = 'Commitment stage at maximum deal closing fee.';
       } else {
         const next1 = STAGE1[stage1Segment + 1];
         const daysLeft1 = STAGE1[stage1Segment].maxDays - stage1DaysForRender;
         const isFirst1 = stage1Segment === 0;
-        timingText.textContent = 'Commitment stage: ' + daysLeft1 + ' days' + (isFirst1 ? ' left with no timing fee.' : ' until fee increases to ' + next1.fee + '%.');
+        timingText.textContent = 'Commitment stage: ' + daysLeft1 + ' days' + (isFirst1 ? ' left with no deal closing fee.' : ' until fee increases to ' + next1.fee + '%.');
       }
     }
 
@@ -657,12 +657,12 @@ function calculate() {
     const isFirst = liveSeg.segmentIndex === 0;
     const isLast = liveSeg.segmentIndex === LEGACY_TIMING.length - 1;
     timingCard.classList.add(isFirst ? 'green' : isLast ? 'red' : 'orange');
-    timingTitle.textContent = 'Timing fee: ' + liveSeg.fee + '%';
+    timingTitle.textContent = 'Deal closing fee: ' + liveSeg.fee + '%';
     if (isLast) {
-      timingText.textContent = 'Maximum timing fee applies.';
+      timingText.textContent = 'Maximum deal closing fee applies.';
     } else {
       const nextFee = LEGACY_TIMING[liveSeg.segmentIndex + 1].fee;
-      timingText.textContent = liveSeg.daysLeft + ' days' + (isFirst ? ' left to close with no timing fee.' : ' until fee increases to ' + nextFee + '%.');
+      timingText.textContent = liveSeg.daysLeft + ' days' + (isFirst ? ' left to close with no deal closing fee.' : ' until fee increases to ' + nextFee + '%.');
     }
     renderTimeline(LEGACY_TIMING, liveSeg.segmentIndex, daysFromApproval, document.getElementById('timeline-bar'), document.getElementById('timeline-labels'), true);
   }
