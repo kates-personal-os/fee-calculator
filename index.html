@@ -258,7 +258,7 @@
 <h2 id="page-title" style="display:none;margin-bottom:24px;font-size:18px;font-weight:600;"></h2>
 
 <div class="input-group">
-  <label>Your participation amount (USD)</label>
+  <label>Your commitment amount (USD)</label>
   <input type="text" id="amount" placeholder="e.g. $6,000,000" inputmode="numeric">
 </div>
 
@@ -287,7 +287,7 @@
 <div class="results" id="results">
 
   <div id="tier-section">
-    <div class="section-label">Admission fee by pledge amount</div>
+    <div class="section-label">Admission fee by commitment amount</div>
     <div class="tier-strip" id="tier-strip"></div>
     <div class="tier-hint" id="tier-hint"></div>
   </div>
@@ -365,6 +365,7 @@ if (!TIERS.length || (!TWO_STAGE && !HAS_LEGACY)) {
 }
 
 const presetAmount = params.get('amount');
+const UPLIFT = parseFloat(params.get('uplift')) || 0;
 
 function normalizeDate(str) {
   if (!str) return null;
@@ -556,16 +557,19 @@ function calculate() {
       rangeLabel = '≥' + formatCompact(TIERS[i - 1].max);
     }
 
-    pill.innerHTML = '<div class="tier-fee">' + tierFee + '%</div><div class="tier-range">' + rangeLabel + '</div>';
+    pill.innerHTML = '<div class="tier-fee">' + (tierFee + UPLIFT) + '%</div><div class="tier-range">' + rangeLabel + '</div>';
     strip.appendChild(pill);
   }
+
+  const effectiveAdmissionFee = admissionFee + UPLIFT;
 
   const nextTier = getNextTier(amount);
   const tierHint = document.getElementById('tier-hint');
   if (nextTier) {
-    tierHint.textContent = 'Your fee: ' + admissionFee + '%. Add ' + formatUSD(nextTier.gap) + ' to reach ' + nextTier.nextFee + '%';
+    const nextEffective = nextTier.nextFee + UPLIFT;
+    tierHint.textContent = 'Your fee: ' + effectiveAdmissionFee + '%. Add ' + formatUSD(nextTier.gap) + ' to reach ' + nextEffective + '%';
   } else {
-    tierHint.textContent = 'Your fee: ' + admissionFee + '% — lowest tier';
+    tierHint.textContent = 'Your fee: ' + effectiveAdmissionFee + '% — lowest tier';
   }
 
   const timingCard = document.getElementById('timing-card');
