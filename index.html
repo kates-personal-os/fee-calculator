@@ -157,7 +157,6 @@
     color: #a09f9c;
     margin-bottom: 10px;
     font-weight: 500;
-    text-transform: uppercase;
     letter-spacing: 0.03em;
   }
 
@@ -258,27 +257,27 @@
 <h2 id="page-title" style="display:none;margin-bottom:24px;font-size:18px;font-weight:600;"></h2>
 
 <div class="input-group">
-  <label>Your commitment amount (USD)</label>
+  <label>Your Commitment Amount (USD)</label>
   <input type="text" id="amount" placeholder="e.g. $6,000,000" inputmode="numeric">
 </div>
 
 <div class="input-group" id="approval-date-group">
-  <label id="approval-date-label">Admission Board approval date</label>
+  <label id="approval-date-label">Admission Board Approval Date</label>
   <input type="date" id="approval-date">
 </div>
 
 <div class="input-group" id="approval-date-display" style="display:none;">
-  <label id="approval-date-display-label">Admission Board approval date</label>
+  <label id="approval-date-display-label">Admission Board Approval Date</label>
   <div id="approval-date-text" style="font-size:16px;font-weight:500;"></div>
 </div>
 
 <div class="input-group" id="sign-date-group" style="display:none;">
-  <label>Forward contract signing date (leave empty if not yet signed)</label>
+  <label>Forward Contract Signing Date (leave empty if not yet signed)</label>
   <input type="date" id="sign-date">
 </div>
 
 <div class="input-group" id="sign-date-display" style="display:none;">
-  <label>Forward contract signing date</label>
+  <label>Forward Contract Signing Date</label>
   <div id="sign-date-text" style="font-size:16px;font-weight:500;"></div>
 </div>
 
@@ -287,7 +286,7 @@
 <div class="results" id="results">
 
   <div id="tier-section">
-    <div class="section-label">Admission fee by commitment amount</div>
+    <div class="section-label">Admission Fee by Commitment Amount</div>
     <div class="tier-strip" id="tier-strip"></div>
     <div class="tier-hint" id="tier-hint"></div>
   </div>
@@ -298,13 +297,13 @@
   </div>
 
   <div class="stage-section" id="stage1-section">
-    <div class="section-label" id="stage1-label">Commitment stage deal closing fee</div>
+    <div class="section-label" id="stage1-label">Commitment Stage Deal Closing Fee</div>
     <div class="timeline" id="stage1-bar"></div>
     <div class="timeline-labels" id="stage1-labels"></div>
   </div>
 
   <div class="stage-section" id="stage2-section">
-    <div class="section-label" id="stage2-label">Activation stage deal closing fee</div>
+    <div class="section-label" id="stage2-label">Activation Stage Deal Closing Fee</div>
     <div class="timeline" id="stage2-bar"></div>
     <div class="timeline-labels" id="stage2-labels"></div>
   </div>
@@ -507,7 +506,7 @@ function renderTimeline(curve, segmentIndex, daysInStage, barEl, labelsEl, isAct
     const lbl = document.createElement('span');
     const rangeStart = prevMax === 0 ? '0' : (prevMax + 1);
     const rangeEnd = curve[i].maxDays === Infinity ? '+' : curve[i].maxDays;
-    lbl.innerHTML = (curve[i].maxDays === Infinity ? prevMax + '+' : rangeStart + '–' + rangeEnd) + ' days<br>' + curve[i].fee + '%';
+    lbl.innerHTML = (curve[i].maxDays === Infinity ? (prevMax + 1) + '+' : rangeStart + '–' + rangeEnd) + ' days<br>' + curve[i].fee + '%';
     if (segmentIndex !== null && i === segmentIndex && isActiveStage) lbl.classList.add('active');
     labelsEl.appendChild(lbl);
     if (curve[i].maxDays !== Infinity) prevMax = curve[i].maxDays;
@@ -567,7 +566,7 @@ function calculate() {
   const tierHint = document.getElementById('tier-hint');
   if (nextTier) {
     const nextEffective = nextTier.nextFee + UPLIFT;
-    tierHint.textContent = 'Your fee: ' + effectiveAdmissionFee + '%. Add ' + formatUSD(nextTier.gap) + ' to reach ' + nextEffective + '%';
+    tierHint.textContent = 'Your fee: ' + effectiveAdmissionFee + '%. Add ' + formatUSD(nextTier.gap) + ' to reach ' + nextEffective + '%.';
   } else {
     tierHint.textContent = 'Your fee: ' + effectiveAdmissionFee + '% — lowest tier';
   }
@@ -613,7 +612,7 @@ function calculate() {
     }
 
     const totalTiming = stage1Fee + stage2Fee;
-    timingTitle.textContent = 'Deal closing fee: ' + totalTiming + '%' + (inStage2 ? ' (Commitment stage: ' + stage1Fee + '% · Activation stage: ' + stage2Fee + '%)' : '');
+    timingTitle.textContent = 'Deal Closing Fee: ' + totalTiming + '%' + (inStage2 ? ' (Commitment Stage: ' + stage1Fee + '% · Activation Stage: ' + stage2Fee + '%)' : '');
 
     if (inStage2) {
       if (STAGE2.length && stage2Segment === STAGE2.length - 1) {
@@ -633,7 +632,9 @@ function calculate() {
         const next1 = STAGE1[stage1Segment + 1];
         const daysLeft1 = STAGE1[stage1Segment].maxDays - stage1DaysForRender;
         const isFirst1 = stage1Segment === 0;
-        timingText.textContent = 'Commitment stage: ' + daysLeft1 + ' days' + (isFirst1 ? ' left with no deal closing fee.' : ' until fee increases to ' + next1.fee + '%.');
+        timingText.textContent = isFirst1
+          ? 'Commitment stage: ' + daysLeft1 + ' days left with no deal closing fee.'
+          : '🕐 ' + daysLeft1 + ' days until the fee increases to ' + next1.fee + '%.';
       }
     }
 
