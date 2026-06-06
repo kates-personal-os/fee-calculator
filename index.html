@@ -42,8 +42,8 @@
   }
 
   input:focus {
-    border-color: #2eaadc;
-    box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.15);
+    border-color: #eb6d56;
+    box-shadow: 0 0 0 2px rgba(235, 109, 86, 0.15);
   }
 
   .results {
@@ -132,7 +132,7 @@
 
   .timeline-segment.passed { background: #787774; }
   .timeline-segment.active {
-    background: linear-gradient(to right, #2eaadc var(--progress, 0%), #e3e2e0 var(--progress, 0%));
+    background: linear-gradient(to right, #eb6d56 var(--progress, 0%), #e3e2e0 var(--progress, 0%));
   }
 
   .timeline-labels {
@@ -148,7 +148,7 @@
   }
 
   .timeline-labels span.active {
-    color: #2eaadc;
+    color: #eb6d56;
     font-weight: 600;
   }
 
@@ -230,7 +230,7 @@
   @media (prefers-color-scheme: dark) {
     body { background: #191919; color: #e3e2e0; }
     input { background: #2f2f2f; border-color: #444; color: #e3e2e0; }
-    input:focus { border-color: #2eaadc; box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.25); }
+    input:focus { border-color: #eb6d56; box-shadow: 0 0 0 2px rgba(235, 109, 86, 0.25); }
     .result-card { background: #2f2f2f; }
     .result-row + .result-row { border-color: #444; }
     .result-label { color: #9b9a97; }
@@ -245,7 +245,7 @@
     .tier-pill.active .tier-range { color: #9b9a97; }
     .tier-hint { color: #666; }
     .timeline-segment { background: #444; }
-    .timeline-segment.active { background: linear-gradient(to right, #2eaadc var(--progress, 0%), #444 var(--progress, 0%)); }
+    .timeline-segment.active { background: linear-gradient(to right, #eb6d56 var(--progress, 0%), #444 var(--progress, 0%)); }
     .timeline-labels { color: #666; }
     label { color: #9b9a97; }
   }
@@ -297,13 +297,13 @@
   </div>
 
   <div class="stage-section" id="stage1-section">
-    <div class="section-label" id="stage1-label">Commitment Stage Deal Closing Fee</div>
+    <div class="section-label" id="stage1-label">Commit Deal Closing Fee</div>
     <div class="timeline" id="stage1-bar"></div>
     <div class="timeline-labels" id="stage1-labels"></div>
   </div>
 
   <div class="stage-section" id="stage2-section">
-    <div class="section-label" id="stage2-label">Activation Stage Deal Closing Fee</div>
+    <div class="section-label" id="stage2-label">Activate Deal Closing Fee</div>
     <div class="timeline" id="stage2-bar"></div>
     <div class="timeline-labels" id="stage2-labels"></div>
   </div>
@@ -612,28 +612,28 @@ function calculate() {
     }
 
     const totalTiming = stage1Fee + stage2Fee;
-    timingTitle.textContent = 'Deal Closing Fee: ' + totalTiming + '%' + (inStage2 ? ' (Commitment Stage: ' + stage1Fee + '% · Activation Stage: ' + stage2Fee + '%)' : '');
+    timingTitle.textContent = 'Deal Closing Fee: ' + totalTiming + '%' + (inStage2 ? ' (Commit: ' + stage1Fee + '% · Activate: ' + stage2Fee + '%)' : '');
 
     if (inStage2) {
       if (STAGE2.length && stage2Segment === STAGE2.length - 1) {
-        timingText.textContent = 'Activation stage at maximum deal closing fee.';
+        timingText.textContent = 'Activate at maximum deal closing fee.';
       } else if (STAGE2.length) {
         const next2 = STAGE2[stage2Segment + 1];
         const daysLeft2 = STAGE2[stage2Segment].maxDays - stage2Days;
-        timingText.textContent = 'Activation stage: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%.';
+        timingText.textContent = 'Activate: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%.';
       } else {
-        timingText.textContent = 'Activation stage not configured.';
+        timingText.textContent = 'Activate not configured.';
       }
     } else {
       const isLast1 = stage1Segment === STAGE1.length - 1;
       if (isLast1) {
-        timingText.textContent = 'Commitment stage at maximum deal closing fee.';
+        timingText.textContent = 'Commit at maximum deal closing fee.';
       } else {
         const next1 = STAGE1[stage1Segment + 1];
         const daysLeft1 = STAGE1[stage1Segment].maxDays - stage1DaysForRender;
         const isFirst1 = stage1Segment === 0;
         timingText.textContent = isFirst1
-          ? 'Commitment stage: ' + daysLeft1 + ' days left with no deal closing fee.'
+          ? 'Commit: ' + daysLeft1 + ' days left with no deal closing fee.'
           : '🕐 ' + daysLeft1 + ' days until the fee increases to ' + next1.fee + '%.';
       }
     }
