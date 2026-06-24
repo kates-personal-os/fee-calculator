@@ -257,7 +257,7 @@
 <h2 id="page-title" style="display:none;margin-bottom:24px;font-size:18px;font-weight:600;"></h2>
 
 <div class="input-group">
-  <label>Your Commitment Amount (USD)</label>
+  <label>Your Contribution Amount (USD)</label>
   <input type="text" id="amount" placeholder="e.g. $6,000,000" inputmode="numeric">
 </div>
 
@@ -286,7 +286,7 @@
 <div class="results" id="results">
 
   <div id="tier-section">
-    <div class="section-label">Admission Fee by Commitment Amount</div>
+    <div class="section-label">Admission Fee by Contribution Amount</div>
     <div class="tier-strip" id="tier-strip"></div>
     <div class="tier-hint" id="tier-hint"></div>
   </div>
@@ -297,19 +297,19 @@
   </div>
 
   <div class="stage-section" id="stage1-section">
-    <div class="section-label" id="stage1-label">Commit Deal Closing Fee</div>
+    <div class="section-label" id="stage1-label">Contribution Stage Deal Closing Cost</div>
     <div class="timeline" id="stage1-bar"></div>
     <div class="timeline-labels" id="stage1-labels"></div>
   </div>
 
   <div class="stage-section" id="stage2-section">
-    <div class="section-label" id="stage2-label">Activate Deal Closing Fee</div>
+    <div class="section-label" id="stage2-label">Activation Stage Deal Closing Cost</div>
     <div class="timeline" id="stage2-bar"></div>
     <div class="timeline-labels" id="stage2-labels"></div>
   </div>
 
   <div id="legacy-timeline-section" style="display:none;">
-    <div class="section-label">Deal closing fee by days since board approval</div>
+    <div class="section-label">Deal closing cost by days since board approval</div>
     <div class="timeline" id="timeline-bar"></div>
     <div class="timeline-labels" id="timeline-labels"></div>
   </div>
@@ -321,8 +321,8 @@
 //
 // Two-stage (current model):
 // ?tiers=5000000:15,7000000:12,10000000:9.5,12000000:7.5,15000000:7.25,0:7
-// &stage1=90:0,120:1,150:2,0:3       (Commitment: days-since-admission → cumulative fee %)
-// &stage2=45:0,90:1,0:2              (Activation: days-since-signing  → cumulative fee %)
+// &stage1=90:0,120:1,150:2,0:3       (Contribution Stage: days-since-admission → cumulative fee %)
+// &stage2=45:0,90:1,0:2              (Activation Stage: days-since-signing  → cumulative fee %)
 // &date=2026-03-15                   (Admission Board approval date)
 // &signdate=2026-04-20               (Forward contract signing date, optional)
 // &title=Your+Fee+Estimate
@@ -612,28 +612,28 @@ function calculate() {
     }
 
     const totalTiming = stage1Fee + stage2Fee;
-    timingTitle.textContent = 'Deal Closing Fee: ' + totalTiming + '%' + (inStage2 ? ' (Commit: ' + stage1Fee + '% · Activate: ' + stage2Fee + '%)' : '');
+    timingTitle.textContent = 'Deal Closing Cost: ' + totalTiming + '%' + (inStage2 ? ' (Contribution Stage: ' + stage1Fee + '% · Activation Stage: ' + stage2Fee + '%)' : '');
 
     if (inStage2) {
       if (STAGE2.length && stage2Segment === STAGE2.length - 1) {
-        timingText.textContent = 'Activate at maximum deal closing fee.';
+        timingText.textContent = 'Activation Stage at maximum deal closing cost.';
       } else if (STAGE2.length) {
         const next2 = STAGE2[stage2Segment + 1];
         const daysLeft2 = STAGE2[stage2Segment].maxDays - stage2Days;
-        timingText.textContent = 'Activate: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%.';
+        timingText.textContent = 'Activation Stage: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%.';
       } else {
-        timingText.textContent = 'Activate not configured.';
+        timingText.textContent = 'Activation Stage not configured.';
       }
     } else {
       const isLast1 = stage1Segment === STAGE1.length - 1;
       if (isLast1) {
-        timingText.textContent = 'Commit at maximum deal closing fee.';
+        timingText.textContent = 'Contribution Stage at maximum deal closing cost.';
       } else {
         const next1 = STAGE1[stage1Segment + 1];
         const daysLeft1 = STAGE1[stage1Segment].maxDays - stage1DaysForRender;
         const isFirst1 = stage1Segment === 0;
         timingText.textContent = isFirst1
-          ? 'Commit: ' + daysLeft1 + ' days left with no deal closing fee.'
+          ? 'Contribution Stage: ' + daysLeft1 + ' days left with no deal closing cost.'
           : '🕐 ' + daysLeft1 + ' days until the fee increases to ' + next1.fee + '%.';
       }
     }
@@ -662,12 +662,12 @@ function calculate() {
     const isFirst = liveSeg.segmentIndex === 0;
     const isLast = liveSeg.segmentIndex === LEGACY_TIMING.length - 1;
     timingCard.classList.add(isFirst ? 'green' : isLast ? 'red' : 'orange');
-    timingTitle.textContent = 'Deal closing fee: ' + liveSeg.fee + '%';
+    timingTitle.textContent = 'Deal closing cost: ' + liveSeg.fee + '%';
     if (isLast) {
-      timingText.textContent = 'Maximum deal closing fee applies.';
+      timingText.textContent = 'Maximum deal closing cost applies.';
     } else {
       const nextFee = LEGACY_TIMING[liveSeg.segmentIndex + 1].fee;
-      timingText.textContent = liveSeg.daysLeft + ' days' + (isFirst ? ' left to close with no deal closing fee.' : ' until fee increases to ' + nextFee + '%.');
+      timingText.textContent = liveSeg.daysLeft + ' days' + (isFirst ? ' left to close with no deal closing cost.' : ' until fee increases to ' + nextFee + '%.');
     }
     renderTimeline(LEGACY_TIMING, liveSeg.segmentIndex, daysFromApproval, document.getElementById('timeline-bar'), document.getElementById('timeline-labels'), true);
   }
