@@ -639,13 +639,13 @@ function calculate() {
     }
 
     const totalTiming = stage1Fee + stage2Fee;
-    timingTitle.textContent = 'Deal Closing Cost: ' + totalTiming + '%' + (inStage2 ? ' (Contribute Stage: ' + stage1Fee + '% · Activate Stage: ' + stage2Fee + '%)' : '');
+    timingTitle.innerHTML = 'Deal Closing Cost: ' + totalTiming + '%' + (inStage2 ? '<br>(Contribute Stage: ' + stage1Fee + '% · Activate Stage: ' + stage2Fee + '%)' : '');
 
     if (inStage2) {
       if (!STAGE2.length) {
         timingText.textContent = 'Activate Stage not configured.';
       } else if (stage2Locked) {
-        timingText.textContent = 'Deal fully closed.';
+        timingText.textContent = '';
       } else if (stage2Segment === STAGE2.length - 1) {
         timingText.textContent = 'Activate Stage at maximum deal closing cost.';
       } else {
