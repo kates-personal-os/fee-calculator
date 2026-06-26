@@ -134,6 +134,9 @@
   .timeline-segment.active {
     background: linear-gradient(to right, #eb6d56 var(--progress, 0%), #e3e2e0 var(--progress, 0%));
   }
+  .timeline-segment.locked {
+    background: linear-gradient(to right, #787774 var(--progress, 0%), #e3e2e0 var(--progress, 0%));
+  }
 
   .timeline-labels {
     display: flex;
@@ -246,6 +249,7 @@
     .tier-hint { color: #666; }
     .timeline-segment { background: #444; }
     .timeline-segment.active { background: linear-gradient(to right, #eb6d56 var(--progress, 0%), #444 var(--progress, 0%)); }
+    .timeline-segment.locked { background: linear-gradient(to right, #787774 var(--progress, 0%), #444 var(--progress, 0%)); }
     .timeline-labels { color: #666; }
     label { color: #9b9a97; }
   }
@@ -380,6 +384,13 @@ function formatDateForDisplay(isoDate) {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
+function formatBumpDate(startISO, daysOffset) {
+  if (!startISO || daysOffset === Infinity) return '';
+  const [y, m, d] = startISO.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + daysOffset));
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   // Legacy mode hides stage sections + stage2 inputs, shows single legacy timeline
   if (!TWO_STAGE) {
@@ -491,8 +502,12 @@ function renderTimeline(curve, segmentIndex, daysInStage, barEl, labelsEl, isAct
         const progress = Math.min(100, Math.max(0, (daysInStage - segStart) / (segEnd - segStart) * 100));
         seg.style.setProperty('--progress', progress + '%');
       } else if (i === segmentIndex && !isActiveStage) {
-        // Locked stage — show its final landing segment as passed
-        seg.classList.add('passed');
+        // Locked stage — partial grey fill marking where the lock landed within the segment
+        seg.classList.add('locked');
+        const segStart = i === 0 ? 0 : curve[i - 1].maxDays;
+        const segEnd = curve[i].maxDays === Infinity ? segStart + 90 : curve[i].maxDays;
+        const progress = Math.min(100, Math.max(0, (daysInStage - segStart) / (segEnd - segStart) * 100));
+        seg.style.setProperty('--progress', progress + '%');
       }
     }
     barEl.appendChild(seg);
@@ -507,7 +522,16 @@ function renderTimeline(curve, segmentIndex, daysInStage, barEl, labelsEl, isAct
   }
 }
 
+function updateDateMins() {
+  if (!TWO_STAGE) return;
+  const approval = document.getElementById('approval-date').value;
+  const sign = document.getElementById('sign-date').value;
+  document.getElementById('sign-date').min = approval || '';
+  document.getElementById('activate-date').min = sign || approval || '';
+}
+
 function calculate() {
+  updateDateMins();
   const raw = document.getElementById('amount').value;
   const approvalDateVal = document.getElementById('approval-date').value;
   const signDateVal = TWO_STAGE ? document.getElementById('sign-date').value : '';
@@ -621,13 +645,14 @@ function calculate() {
       if (!STAGE2.length) {
         timingText.textContent = 'Activate Stage not configured.';
       } else if (stage2Locked) {
-        timingText.textContent = 'Activate Stage closed at ' + stage2Fee + '%.';
+        timingText.textContent = 'Deal fully closed.';
       } else if (stage2Segment === STAGE2.length - 1) {
         timingText.textContent = 'Activate Stage at maximum deal closing cost.';
       } else {
         const next2 = STAGE2[stage2Segment + 1];
         const daysLeft2 = STAGE2[stage2Segment].maxDays - stage2Days;
-        timingText.textContent = 'Activate Stage: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%.';
+        const bumpDate2 = formatBumpDate(signDateVal, STAGE2[stage2Segment].maxDays);
+        timingText.textContent = 'Activate Stage: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%' + (bumpDate2 ? ' (on ' + bumpDate2 + ')' : '') + '.';
       }
     } else {
       const isLast1 = stage1Segment === STAGE1.length - 1;
@@ -636,10 +661,11 @@ function calculate() {
       } else {
         const next1 = STAGE1[stage1Segment + 1];
         const daysLeft1 = STAGE1[stage1Segment].maxDays - stage1DaysForRender;
+        const bumpDate1 = formatBumpDate(approvalDateVal, STAGE1[stage1Segment].maxDays);
         const isFirst1 = stage1Segment === 0;
         timingText.textContent = isFirst1
-          ? 'Contribute Stage: ' + daysLeft1 + ' days left with no deal closing cost.'
-          : '🕐 ' + daysLeft1 + ' days until the fee increases to ' + next1.fee + '%.';
+          ? 'Contribute Stage: ' + daysLeft1 + ' days left with no deal closing cost' + (bumpDate1 ? ' (until ' + bumpDate1 + ')' : '') + '.'
+          : '🕐 ' + daysLeft1 + ' days until the fee increases to ' + next1.fee + '%' + (bumpDate1 ? ' (on ' + bumpDate1 + ')' : '') + '.';
       }
     }
 
@@ -672,7 +698,9 @@ function calculate() {
       timingText.textContent = 'Maximum deal closing cost applies.';
     } else {
       const nextFee = LEGACY_TIMING[liveSeg.segmentIndex + 1].fee;
-      timingText.textContent = liveSeg.daysLeft + ' days' + (isFirst ? ' left to close with no deal closing cost.' : ' until fee increases to ' + nextFee + '%.');
+      const bumpDateLegacy = formatBumpDate(approvalDateVal, LEGACY_TIMING[liveSeg.segmentIndex].maxDays);
+      const datePart = bumpDateLegacy ? (isFirst ? ' (until ' + bumpDateLegacy + ')' : ' (on ' + bumpDateLegacy + ')') : '';
+      timingText.textContent = liveSeg.daysLeft + ' days' + (isFirst ? ' left to close with no deal closing cost' + datePart + '.' : ' until fee increases to ' + nextFee + '%' + datePart + '.');
     }
     renderTimeline(LEGACY_TIMING, liveSeg.segmentIndex, daysFromApproval, document.getElementById('timeline-bar'), document.getElementById('timeline-labels'), true);
   }
