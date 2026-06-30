@@ -156,11 +156,17 @@
   }
 
   .section-label {
-    font-size: 12px;
-    color: #a09f9c;
+    font-size: 14px;
+    color: #787774;
     margin-bottom: 10px;
     font-weight: 500;
-    letter-spacing: 0.03em;
+  }
+
+  .tier-helper {
+    font-size: 13px;
+    color: #a09f9c;
+    margin-bottom: 12px;
+    line-height: 1.5;
   }
 
   .stage-section {
@@ -239,7 +245,8 @@
     .result-label { color: #9b9a97; }
     .total-row .result-label { color: #e3e2e0; }
     .hint-card.blue, .hint-card.green, .hint-card.orange, .hint-card.red { background: #3a3a3a; color: #b0b0ad; }
-    .section-label { color: #666; }
+    .section-label { color: #9b9a97; }
+    .tier-helper { color: #666; }
     .tier-pill { border-color: #444; }
     .tier-pill .tier-fee { color: #9b9a97; }
     .tier-pill .tier-range { color: #666; }
@@ -286,6 +293,7 @@
 
   <div id="tier-section">
     <div class="section-label">Admission Fee by Contribution Amount</div>
+    <div class="tier-helper">Your Admission Fee tiers reflect your admission timing. Later admissions carry higher rates.</div>
     <div class="tier-strip" id="tier-strip"></div>
     <div class="tier-hint" id="tier-hint"></div>
   </div>
