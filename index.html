@@ -664,7 +664,7 @@ function calculate() {
         const bumpDate1 = formatBumpDate(approvalDateVal, STAGE1[stage1Segment].maxDays);
         const isFirst1 = stage1Segment === 0;
         timingText.textContent = isFirst1
-          ? 'Contribute Stage: ' + daysLeft1 + ' days left with no deal closing cost' + (bumpDate1 ? ' (until ' + bumpDate1 + ')' : '') + '.'
+          ? 'Contribute Stage: ' + daysLeft1 + ' days left with Deal Closing Cost covered by Accumulator' + (bumpDate1 ? ' (until ' + bumpDate1 + ')' : '') + '.'
           : '🕐 ' + daysLeft1 + ' days until the fee increases to ' + next1.fee + '%' + (bumpDate1 ? ' (on ' + bumpDate1 + ')' : '') + '.';
       }
     }
