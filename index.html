@@ -652,7 +652,10 @@ function calculate() {
         const next2 = STAGE2[stage2Segment + 1];
         const daysLeft2 = STAGE2[stage2Segment].maxDays - stage2Days;
         const bumpDate2 = formatBumpDate(signDateVal, STAGE2[stage2Segment].maxDays);
-        timingText.textContent = 'Activate Stage: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%' + (bumpDate2 ? ' (on ' + bumpDate2 + ')' : '') + '.';
+        const isFirst2 = stage2Segment === 0;
+        timingText.textContent = isFirst2
+          ? 'Activate Stage: ' + daysLeft2 + ' days left with Deal Closing Cost covered by Accumulator' + (bumpDate2 ? ' (until ' + bumpDate2 + ')' : '') + '.'
+          : 'Activate Stage: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%' + (bumpDate2 ? ' (on ' + bumpDate2 + ')' : '') + '.';
       }
     } else {
       const isLast1 = stage1Segment === STAGE1.length - 1;
