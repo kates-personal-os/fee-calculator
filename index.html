@@ -493,6 +493,8 @@ function parseAmount(str) {
   return parseFloat(str.replace(/[^0-9.]/g, ''));
 }
 
+function pluralDays(n) { return n + (n === 1 ? ' day' : ' days'); }
+
 function renderTimeline(curve, segmentIndex, daysInStage, barEl, labelsEl, isActiveStage) {
   barEl.innerHTML = '';
   labelsEl.innerHTML = '';
@@ -662,8 +664,8 @@ function calculate() {
         const bumpDate2 = formatBumpDate(signDateVal, STAGE2[stage2Segment].maxDays);
         const isFirst2 = stage2Segment === 0;
         timingText.textContent = isFirst2
-          ? 'Activate Stage: ' + daysLeft2 + ' days left with Deal Closing Cost covered by Accumulator' + (bumpDate2 ? ' (until ' + bumpDate2 + ')' : '') + '.'
-          : 'Activate Stage: ' + daysLeft2 + ' days until fee increases to ' + next2.fee + '%' + (bumpDate2 ? ' (on ' + bumpDate2 + ')' : '') + '.';
+          ? 'Activate Stage: ' + pluralDays(daysLeft2) + ' left with Deal Closing Cost covered by Accumulator' + (bumpDate2 ? ' (until ' + bumpDate2 + ')' : '') + '.'
+          : 'Activate Stage: ' + pluralDays(daysLeft2) + ' until fee increases to ' + next2.fee + '%' + (bumpDate2 ? ' (on ' + bumpDate2 + ')' : '') + '.';
       }
     } else {
       const isLast1 = stage1Segment === STAGE1.length - 1;
@@ -675,8 +677,8 @@ function calculate() {
         const bumpDate1 = formatBumpDate(approvalDateVal, STAGE1[stage1Segment].maxDays);
         const isFirst1 = stage1Segment === 0;
         timingText.textContent = isFirst1
-          ? 'Contribute Stage: ' + daysLeft1 + ' days left with Deal Closing Cost covered by Accumulator' + (bumpDate1 ? ' (until ' + bumpDate1 + ')' : '') + '.'
-          : '🕐 ' + daysLeft1 + ' days until the fee increases to ' + next1.fee + '%' + (bumpDate1 ? ' (on ' + bumpDate1 + ')' : '') + '.';
+          ? 'Contribute Stage: ' + pluralDays(daysLeft1) + ' left with Deal Closing Cost covered by Accumulator' + (bumpDate1 ? ' (until ' + bumpDate1 + ')' : '') + '.'
+          : '🕐 ' + pluralDays(daysLeft1) + ' until the fee increases to ' + next1.fee + '%' + (bumpDate1 ? ' (on ' + bumpDate1 + ')' : '') + '.';
       }
     }
 
@@ -711,7 +713,7 @@ function calculate() {
       const nextFee = LEGACY_TIMING[liveSeg.segmentIndex + 1].fee;
       const bumpDateLegacy = formatBumpDate(approvalDateVal, LEGACY_TIMING[liveSeg.segmentIndex].maxDays);
       const datePart = bumpDateLegacy ? (isFirst ? ' (until ' + bumpDateLegacy + ')' : ' (on ' + bumpDateLegacy + ')') : '';
-      timingText.textContent = liveSeg.daysLeft + ' days' + (isFirst ? ' left to close with no deal closing cost' + datePart + '.' : ' until fee increases to ' + nextFee + '%' + datePart + '.');
+      timingText.textContent = pluralDays(liveSeg.daysLeft) + (isFirst ? ' left to close with no deal closing cost' + datePart + '.' : ' until fee increases to ' + nextFee + '%' + datePart + '.');
     }
     renderTimeline(LEGACY_TIMING, liveSeg.segmentIndex, daysFromApproval, document.getElementById('timeline-bar'), document.getElementById('timeline-labels'), true);
   }

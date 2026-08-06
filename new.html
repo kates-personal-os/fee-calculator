@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fee Calculator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #37352f;
+    background: transparent;
+    padding: 32px 24px;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  .input-group { margin-bottom: 20px; }
+
+  label {
+    display: block;
+    font-size: 14px;
+    color: #787774;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 16px;
+    border: 1px solid #e3e2e0;
+    border-radius: 6px;
+    outline: none;
+    font-family: inherit;
+    color: #37352f;
+    transition: border-color 0.15s;
+  }
+
+  input:focus {
+    border-color: #eb6d56;
+    box-shadow: 0 0 0 2px rgba(235, 109, 86, 0.15);
+  }
+
+  .results { display: none; margin-top: 28px; }
+  .results.visible { display: block; }
+
+  .hint-card {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    background: #f7f6f3;
+    color: #4a4a47;
+  }
+
+  .hint-title { font-weight: 600; margin-bottom: 2px; }
+
+  .timeline {
+    display: flex;
+    gap: 2px;
+    margin-top: 20px;
+    margin-bottom: 8px;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .timeline-segment {
+    flex: 1;
+    background: #e3e2e0;
+    position: relative;
+    transition: background 0.3s;
+  }
+
+  .timeline-segment.passed { background: #787774; }
+  .timeline-segment.active {
+    background: linear-gradient(to right, #eb6d56 var(--progress, 0%), #e3e2e0 var(--progress, 0%));
+  }
+  .timeline-segment.locked {
+    background: linear-gradient(to right, #787774 var(--progress, 0%), #e3e2e0 var(--progress, 0%));
+  }
+
+  .timeline-labels {
+    display: flex;
+    gap: 2px;
+    font-size: 11px;
+    color: #a09f9c;
+  }
+  .timeline-labels span { flex: 1; text-align: center; }
+  .timeline-labels span.active { color: #eb6d56; font-weight: 600; }
+
+  .section-label {
+    font-size: 14px;
+    color: #787774;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  .tier-helper {
+    font-size: 13px;
+    color: #a09f9c;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+
+  .stage-section { margin-bottom: 24px; }
+
+  .tier-strip { display: flex; gap: 6px; margin-bottom: 8px; }
+  .tier-hint { font-size: 13px; color: #a09f9c; margin-bottom: 20px; }
+
+  .tier-pill {
+    flex: 1;
+    border: 1.5px solid #e3e2e0;
+    border-radius: 8px;
+    padding: 10px 4px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .tier-pill .tier-fee { font-size: 15px; font-weight: 600; color: #787774; }
+  .tier-pill .tier-range { font-size: 11px; color: #a09f9c; margin-top: 2px; }
+  .tier-pill.active { border-color: #787774; background: #f7f6f3; }
+  .tier-pill.active .tier-fee { color: #37352f; }
+  .tier-pill.active .tier-range { color: #787774; }
+  .tier-pill.passed { border-color: #e3e2e0; background: transparent; opacity: 0.5; }
+
+  .error-text {
+    color: #eb5757;
+    font-size: 13px;
+    margin-top: 6px;
+    display: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #191919; color: #e3e2e0; }
+    input { background: #2f2f2f; border-color: #444; color: #e3e2e0; }
+    input:focus { border-color: #eb6d56; box-shadow: 0 0 0 2px rgba(235, 109, 86, 0.25); }
+    .hint-card { background: #3a3a3a; color: #b0b0ad; }
+    .section-label { color: #9b9a97; }
+    .tier-helper { color: #666; }
+    .tier-pill { border-color: #444; }
+    .tier-pill .tier-fee { color: #9b9a97; }
+    .tier-pill .tier-range { color: #666; }
+    .tier-pill.active { border-color: #9b9a97; background: #2f2f2f; }
+    .tier-pill.active .tier-fee { color: #e3e2e0; }
+    .tier-pill.active .tier-range { color: #9b9a97; }
+    .tier-hint { color: #666; }
+    .timeline-segment { background: #444; }
+    .timeline-segment.active { background: linear-gradient(to right, #eb6d56 var(--progress, 0%), #444 var(--progress, 0%)); }
+    .timeline-segment.locked { background: linear-gradient(to right, #787774 var(--progress, 0%), #444 var(--progress, 0%)); }
+    .timeline-labels { color: #666; }
+    label { color: #9b9a97; }
+  }
+</style>
+</head>
+<body>
+
+<h2 id="page-title" style="display:none;margin-bottom:24px;font-size:18px;font-weight:600;"></h2>
+
+<div class="input-group">
+  <label>Your Contribution Amount (USD)</label>
+  <input type="text" id="amount" placeholder="e.g. $6,000,000" inputmode="numeric">
+</div>
+
+<div class="input-group">
+  <label>Admission Board Approval</label>
+  <input type="date" id="approval-date">
+</div>
+
+<div class="input-group">
+  <label>Deal Completion date (leave empty if not yet closed)</label>
+  <input type="date" id="completion-date">
+</div>
+
+<p class="error-text" id="error"></p>
+
+<div class="results" id="results">
+
+  <div id="tier-section">
+    <div class="section-label">Admission Fee by Contribution Amount</div>
+    <div class="tier-helper">Your Admission Fee tiers reflect your admission timing. Later admissions carry higher rates.</div>
+    <div class="tier-strip" id="tier-strip"></div>
+    <div class="tier-hint" id="tier-hint"></div>
+  </div>
+
+  <div class="hint-card" id="timing-card">
+    <div class="hint-title" id="timing-title"></div>
+    <div id="timing-text"></div>
+  </div>
+
+  <div class="stage-section" id="timing-section">
+    <div class="section-label">Deal Closing Cost</div>
+    <div class="timeline" id="timeline-bar"></div>
+    <div class="timeline-labels" id="timeline-labels"></div>
+  </div>
+
+</div>
+
+<script>
+// Config is passed via URL parameters (single-clock model — one timeline from
+// Admission Board Approval; all stages share it):
+//
+// ?tiers=5000000:15,7000000:12,10000000:9.5,12000000:7.5,15000000:7.25,0:7
+//                                   (One-Time Admission Fee by contribution amount)
+// &timing=45:0,75:1,105:2,0:3       (Deal Closing Cost: days-since-approval → cumulative %)
+// &longstop=120                     (optional — day the 120-day long-stop applies)
+// &date=2026-03-15                  (Admission Board Approval date)
+// &completiondate=2026-05-15         (optional — locks the timing at completion)
+// &amount=6000000  &title=Your+Fee+Estimate  &uplift=0
+
+const params = new URLSearchParams(window.location.search);
+
+function parseTiers(str) {
+  if (!str) return [];
+  return str.split(',').map(pair => {
+    const [max, fee] = pair.split(':');
+    return { max: max === '0' ? Infinity : parseFloat(max), fee: parseFloat(fee) };
+  });
+}
+
+function parseTiming(str) {
+  if (!str) return [];
+  return str.split(',').map(pair => {
+    const [days, fee] = pair.split(':');
+    return { maxDays: days === '0' ? Infinity : parseFloat(days), fee: parseFloat(fee) };
+  });
+}
+
+const TIERS = parseTiers(params.get('tiers'));
+const TIMING = parseTiming(params.get('timing'));
+const LONG_STOP = params.get('longstop') ? parseFloat(params.get('longstop')) : null;
+const presetDate = params.get('date');
+const presetCompletionDate = params.get('completiondate');
+const pageTitle = params.get('title');
+const presetAmount = params.get('amount');
+const UPLIFT = parseFloat(params.get('uplift')) || 0;
+
+if (!TIERS.length || !TIMING.length) {
+  document.body.innerHTML = '<p style="color:#787774;padding:40px;text-align:center;">Calculator not configured.</p>';
+}
+
+const COVERED_END = TIMING.length ? TIMING[0].maxDays : 0;  // first (0%) segment end = covered window
+
+function normalizeDate(str) {
+  if (!str) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  var d = new Date(str);
+  if (!isNaN(d)) return d.toISOString().split('T')[0];
+  return null;
+}
+
+const normalizedApprovalDate = normalizeDate(presetDate);
+const normalizedCompletionDate = normalizeDate(presetCompletionDate);
+
+function formatBumpDate(startISO, daysOffset) {
+  if (!startISO || daysOffset === Infinity) return '';
+  const [y, m, d] = startISO.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + daysOffset));
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  if (normalizedApprovalDate) document.getElementById('approval-date').value = normalizedApprovalDate;
+  if (normalizedCompletionDate) document.getElementById('completion-date').value = normalizedCompletionDate;
+
+  if (presetAmount) {
+    var num = parseInt(presetAmount.replace(/[^0-9]/g, ''));
+    if (num > 0) document.getElementById('amount').value = '$' + num.toLocaleString('en-US');
+  }
+
+  if (pageTitle) {
+    const h = document.getElementById('page-title');
+    if (h) { h.textContent = pageTitle; h.style.display = 'block'; }
+  }
+
+  calculate();
+});
+
+function getAdmissionFee(amount) {
+  for (const t of TIERS) { if (amount < t.max) return t.fee; }
+  return TIERS.length ? TIERS[TIERS.length - 1].fee : 0;
+}
+
+function getNextTier(amount) {
+  for (let i = 0; i < TIERS.length - 1; i++) {
+    if (amount < TIERS[i].max) {
+      const next = TIERS[i + 1];
+      const gap = TIERS[i].max - amount;
+      return { gap, nextFee: next.fee, threshold: TIERS[i].max };
+    }
+  }
+  return null;
+}
+
+// Calendar-date diff in local time. Avoids UTC drift in Paris small-hours.
+function daysBetween(fromISO, toISO) {
+  const [fy, fm, fd] = fromISO.split('-').map(Number);
+  const [ty, tm, td] = toISO.split('-').map(Number);
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000);
+}
+
+function daysSinceLocal(fromISO) {
+  const now = new Date();
+  const today = now.getFullYear() + '-'
+    + String(now.getMonth() + 1).padStart(2, '0') + '-'
+    + String(now.getDate()).padStart(2, '0');
+  return daysBetween(fromISO, today);
+}
+
+function getSegmentForDays(curve, days) {
+  for (let i = 0; i < curve.length; i++) {
+    if (days <= curve[i].maxDays || i === curve.length - 1) {
+      const daysLeft = curve[i].maxDays === Infinity ? 0 : curve[i].maxDays - days;
+      return { fee: curve[i].fee, daysLeft, segmentIndex: i };
+    }
+  }
+  return { fee: 0, daysLeft: 0, segmentIndex: 0 };
+}
+
+function formatUSD(n) { return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 }); }
+function formatCompact(n) {
+  if (n >= 1e6) return '$' + (n / 1e6) + 'M';
+  if (n >= 1e3) return '$' + (n / 1e3) + 'K';
+  return '$' + n;
+}
+function parseAmount(str) { return parseFloat(str.replace(/[^0-9.]/g, '')); }
+function fmtPct(n) { return (Number.isInteger(n) ? n : parseFloat(n.toFixed(2))) + '%'; }
+function pluralDays(n) { return n + (n === 1 ? ' day' : ' days'); }
+
+function renderTimeline(curve, segmentIndex, days, barEl, labelsEl, isActive) {
+  barEl.innerHTML = '';
+  labelsEl.innerHTML = '';
+  let prevMax = 0;
+  for (let i = 0; i < curve.length; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'timeline-segment';
+    if (segmentIndex !== null) {
+      if (i < segmentIndex) {
+        seg.classList.add('passed');
+      } else if (i === segmentIndex) {
+        seg.classList.add(isActive ? 'active' : 'locked');
+        const segStart = i === 0 ? 0 : curve[i - 1].maxDays;
+        const segEnd = curve[i].maxDays === Infinity ? (LONG_STOP !== null ? LONG_STOP : segStart + 30) : curve[i].maxDays;
+        const progress = Math.min(100, Math.max(0, (days - segStart) / (segEnd - segStart) * 100));
+        seg.style.setProperty('--progress', progress + '%');
+      }
+    }
+    barEl.appendChild(seg);
+
+    const lbl = document.createElement('span');
+    const rangeStart = prevMax === 0 ? '0' : (prevMax + 1);
+    lbl.innerHTML = (curve[i].maxDays === Infinity ? (prevMax + 1) + '+' : rangeStart + '–' + curve[i].maxDays) + ' days<br>' + curve[i].fee + '%';
+    if (segmentIndex !== null && i === segmentIndex && isActive) lbl.classList.add('active');
+    labelsEl.appendChild(lbl);
+    if (curve[i].maxDays !== Infinity) prevMax = curve[i].maxDays;
+  }
+}
+
+function calculate() {
+  const raw = document.getElementById('amount').value;
+  const approvalDateVal = document.getElementById('approval-date').value;
+  const completionDateVal = document.getElementById('completion-date').value;
+  document.getElementById('completion-date').min = approvalDateVal || '';
+  const results = document.getElementById('results');
+  const error = document.getElementById('error');
+
+  const amount = parseAmount(raw);
+  if (!amount || amount <= 0) { results.classList.remove('visible'); error.style.display = 'none'; return; }
+  if (!approvalDateVal) {
+    results.classList.remove('visible');
+    error.textContent = 'Please select the Admission Board Approval date.';
+    error.style.display = 'block';
+    return;
+  }
+  error.style.display = 'none';
+
+  // ---- Base One-Time Admission Fee (by amount) ----
+  const admissionFee = getAdmissionFee(amount) + UPLIFT;
+
+  const strip = document.getElementById('tier-strip');
+  strip.innerHTML = '';
+  for (let i = 0; i < TIERS.length; i++) {
+    const pill = document.createElement('div');
+    pill.className = 'tier-pill';
+    const tierFee = TIERS[i].fee + UPLIFT;
+    if (tierFee === admissionFee) pill.classList.add('active');
+    if (TIERS[i].fee + UPLIFT > admissionFee) pill.classList.add('passed');
+    const rangeLabel = i === 0 ? '<' + formatCompact(TIERS[0].max) : '≥' + formatCompact(TIERS[i - 1].max);
+    pill.innerHTML = '<div class="tier-fee">' + fmtPct(tierFee) + '</div><div class="tier-range">' + rangeLabel + '</div>';
+    strip.appendChild(pill);
+  }
+
+  const nextTier = getNextTier(amount);
+  const tierHint = document.getElementById('tier-hint');
+  tierHint.textContent = nextTier
+    ? 'Your fee: ' + fmtPct(admissionFee) + '. Add ' + formatUSD(nextTier.gap) + ' to reach ' + fmtPct(nextTier.nextFee + UPLIFT) + '.'
+    : 'Your fee: ' + fmtPct(admissionFee) + ' — lowest tier.';
+
+  // ---- Deal Closing Cost (by timing) ----
+  const locked = !!completionDateVal;
+  const days = locked
+    ? Math.max(0, daysBetween(approvalDateVal, completionDateVal))
+    : Math.max(0, daysSinceLocal(approvalDateVal));
+  const seg = getSegmentForDays(TIMING, days);
+  const closingCost = seg.fee;
+
+  const isFirst = seg.segmentIndex === 0;                 // covered window
+  const isLast = seg.segmentIndex === TIMING.length - 1;   // top tier
+  const pastLongStop = LONG_STOP !== null && days >= LONG_STOP;
+
+  // ---- Dynamic nudge ----
+  const timingTitle = document.getElementById('timing-title');
+  const timingText = document.getElementById('timing-text');
+  timingTitle.innerHTML = 'Deal Closing Cost: ' + fmtPct(closingCost);
+
+  if (pastLongStop) {
+    timingText.textContent = 'Past the ' + LONG_STOP + '-day long-stop — deal work pauses pending resubmission to the Admission Board.';
+  } else if (isFirst) {
+    const daysLeft = COVERED_END - days;
+    const bump = formatBumpDate(approvalDateVal, COVERED_END);
+    timingText.textContent = pluralDays(daysLeft) + ' left with Deal Closing Cost covered by Accumulator' + (bump ? ' (until ' + bump + ')' : '') + '.';
+  } else if (isLast) {
+    timingText.textContent = LONG_STOP !== null
+      ? pluralDays(LONG_STOP - days) + ' until the ' + LONG_STOP + '-day long-stop, after which deal work pauses until you resubmit to the Admission Board.'
+      : 'At the maximum Deal Closing Cost.';
+  } else {
+    const next = TIMING[seg.segmentIndex + 1];
+    const daysLeft = TIMING[seg.segmentIndex].maxDays - days;
+    const bump = formatBumpDate(approvalDateVal, TIMING[seg.segmentIndex].maxDays);
+    timingText.textContent = pluralDays(daysLeft) + ' until the fee increases to ' + next.fee + '%' + (bump ? ' (on ' + bump + ')' : '') + '.';
+  }
+
+  renderTimeline(TIMING, seg.segmentIndex, days, document.getElementById('timeline-bar'), document.getElementById('timeline-labels'), !locked);
+
+  results.classList.add('visible');
+}
+
+// Auto-format amount input — preserve trailing zeros while editing
+var amountInput = document.getElementById('amount');
+amountInput.addEventListener('input', function () {
+  var cursorPos = this.selectionStart;
+  var beforeLen = this.value.length;
+  var raw = this.value.replace(/[^0-9]/g, '');
+  if (raw) {
+    var parts = [];
+    for (var i = raw.length; i > 0; i -= 3) parts.unshift(raw.substring(Math.max(0, i - 3), i));
+    this.value = '$' + parts.join(',');
+    var diff = this.value.length - beforeLen;
+    this.setSelectionRange(cursorPos + diff, cursorPos + diff);
+  } else {
+    this.value = '';
+  }
+  calculate();
+});
+function cleanupAmount() {
+  var raw = amountInput.value.replace(/[^0-9]/g, '');
+  if (raw && parseInt(raw) > 0) amountInput.value = '$' + parseInt(raw).toLocaleString('en-US');
+  else if (!raw || parseInt(raw) === 0) amountInput.value = '';
+}
+amountInput.addEventListener('blur', cleanupAmount);
+amountInput.addEventListener('change', cleanupAmount);
+amountInput.addEventListener('focusout', cleanupAmount);
+
+document.getElementById('approval-date').addEventListener('change', calculate);
+document.getElementById('completion-date').addEventListener('change', calculate);
+</script>
+
+</body>
+</html>
