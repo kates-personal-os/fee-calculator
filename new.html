@@ -352,7 +352,9 @@ function renderTimeline(curve, segmentIndex, days, barEl, labelsEl, isActive) {
 
     const lbl = document.createElement('span');
     const rangeStart = prevMax === 0 ? '0' : (prevMax + 1);
-    lbl.innerHTML = (curve[i].maxDays === Infinity ? (prevMax + 1) + '+' : rangeStart + '–' + curve[i].maxDays) + ' days<br>' + curve[i].fee + '%';
+    // Final band: cap at the long-stop day (work pauses after it — no higher fee), else open-ended "N+".
+    const lastLabel = LONG_STOP !== null ? (prevMax + 1) + '–' + LONG_STOP : (prevMax + 1) + '+';
+    lbl.innerHTML = (curve[i].maxDays === Infinity ? lastLabel : rangeStart + '–' + curve[i].maxDays) + ' days<br>' + curve[i].fee + '%';
     if (segmentIndex !== null && i === segmentIndex && isActive) lbl.classList.add('active');
     labelsEl.appendChild(lbl);
     if (curve[i].maxDays !== Infinity) prevMax = curve[i].maxDays;
