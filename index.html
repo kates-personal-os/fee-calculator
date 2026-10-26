@@ -332,6 +332,7 @@
 // &stage2=45:0,90:1,0:2              (Activate Stage: days-since-signing  → cumulative fee %)
 // &date=2026-03-15                   (Admission Board approval date)
 // &signdate=2026-04-20               (Contribute Stage completion date, optional — was Forward Contract signing)
+// &stage2start=2026-04-25            (Activate Stage start, optional — overrides signdate as the Activate clock origin)
 // &activatedate=2026-05-15            (Activate Stage completion date, optional)
 // &title=Your+Fee+Estimate
 //
@@ -363,6 +364,7 @@ const LEGACY_TIMING = parseTiming(params.get('timing'));
 const presetDate = params.get('date');
 const presetSignDate = params.get('signdate');
 const presetActivateDate = params.get('activatedate');
+const presetStage2Start = params.get('stage2start');
 const pageTitle = params.get('title');
 
 const TWO_STAGE = STAGE1.length > 0;
@@ -386,6 +388,7 @@ function normalizeDate(str) {
 const normalizedApprovalDate = normalizeDate(presetDate);
 const normalizedSignDate = normalizeDate(presetSignDate);
 const normalizedActivateDate = normalizeDate(presetActivateDate);
+const normalizedStage2Start = normalizeDate(presetStage2Start); // URL-only, no input field
 
 function formatDateForDisplay(isoDate) {
   var d = new Date(isoDate + 'T00:00:00');
@@ -537,7 +540,7 @@ function updateDateMins() {
   const approval = document.getElementById('approval-date').value;
   const sign = document.getElementById('sign-date').value;
   document.getElementById('sign-date').min = approval || '';
-  document.getElementById('activate-date').min = sign || approval || '';
+  document.getElementById('activate-date').min = normalizedStage2Start || sign || approval || '';
 }
 
 function calculate() {
@@ -546,6 +549,8 @@ function calculate() {
   const approvalDateVal = document.getElementById('approval-date').value;
   const signDateVal = TWO_STAGE ? document.getElementById('sign-date').value : '';
   const activateDateVal = TWO_STAGE ? document.getElementById('activate-date').value : '';
+  // Activate clock origin: explicit Activate Stage start if set, otherwise Contribute completion.
+  const stage2StartVal = TWO_STAGE ? (normalizedStage2Start || signDateVal) : '';
   const results = document.getElementById('results');
   const error = document.getElementById('error');
 
@@ -637,10 +642,10 @@ function calculate() {
     let stage2ActiveForRender = true;
     if (inStage2 && STAGE2.length) {
       if (stage2Locked) {
-        stage2Days = Math.max(0, daysBetween(signDateVal, activateDateVal));
+        stage2Days = Math.max(0, daysBetween(stage2StartVal, activateDateVal));
         stage2ActiveForRender = false;
       } else {
-        stage2Days = Math.max(0, daysSinceLocal(signDateVal));
+        stage2Days = Math.max(0, daysSinceLocal(stage2StartVal));
         stage2ActiveForRender = true;
       }
       const seg2 = getSegmentForDays(STAGE2, stage2Days);
@@ -661,7 +666,7 @@ function calculate() {
       } else {
         const next2 = STAGE2[stage2Segment + 1];
         const daysLeft2 = STAGE2[stage2Segment].maxDays - stage2Days;
-        const bumpDate2 = formatBumpDate(signDateVal, STAGE2[stage2Segment].maxDays);
+        const bumpDate2 = formatBumpDate(stage2StartVal, STAGE2[stage2Segment].maxDays);
         const isFirst2 = stage2Segment === 0;
         timingText.textContent = isFirst2
           ? 'Activate Stage: ' + pluralDays(daysLeft2) + ' left with Deal Closing Cost covered by Accumulator' + (bumpDate2 ? ' (until ' + bumpDate2 + ')' : '') + '.'
