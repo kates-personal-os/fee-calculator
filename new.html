@@ -209,6 +209,8 @@
 // &longstop=120                     (optional — day the 120-day long-stop applies)
 // &date=2026-03-15                  (Admission Board Approval date)
 // &completiondate=2026-05-15         (optional — locks the timing at completion)
+// &pausedate=2026-04-01              (optional — clock pause, one per deal; URL-only, no input field)
+// &resumedate=2026-04-20             (optional — clock resumes; empty = still paused)
 // &amount=6000000  &title=Your+Fee+Estimate  &uplift=0
 
 const params = new URLSearchParams(window.location.search);
@@ -237,6 +239,14 @@ const presetCompletionDate = params.get('completiondate');
 const pageTitle = params.get('title');
 const presetAmount = params.get('amount');
 const UPLIFT = parseFloat(params.get('uplift')) || 0;
+const PAUSE_DATE = normalizeDateParam(params.get('pausedate'));
+const RESUME_DATE = normalizeDateParam(params.get('resumedate'));
+function normalizeDateParam(str) {
+  if (!str) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  var d = new Date(str);
+  return isNaN(d) ? null : d.toISOString().split('T')[0];
+}
 
 if (!TIERS.length || !TIMING.length) {
   document.body.innerHTML = '<p style="color:#787774;padding:40px;text-align:center;">Calculator not configured.</p>';
@@ -403,9 +413,21 @@ function calculate() {
 
   // ---- Deal Closing Cost (by timing) ----
   const locked = !!completionDateVal;
-  const days = locked
-    ? Math.max(0, daysBetween(approvalDateVal, completionDateVal))
-    : Math.max(0, daysSinceLocal(approvalDateVal));
+  const rawDays = locked
+    ? daysBetween(approvalDateVal, completionDateVal)
+    : daysSinceLocal(approvalDateVal);
+  // Clock pause (one per deal): days between pause and resume don't count.
+  // Open pause (no resume) freezes the clock at the pause date.
+  const refDays = rawDays;                                       // reference point (completion or today), in days from approval
+  let pausedDays = 0;
+  const isPaused = !!PAUSE_DATE && !RESUME_DATE && !locked;
+  if (PAUSE_DATE) {
+    const pStart = daysBetween(approvalDateVal, PAUSE_DATE);
+    const pEnd = Math.min(RESUME_DATE ? daysBetween(approvalDateVal, RESUME_DATE) : refDays, refDays);
+    pausedDays = Math.max(0, pEnd - Math.max(0, pStart));
+  }
+  const days = Math.max(0, rawDays - pausedDays);
+  const bumpOffset = (d) => d + pausedDays;                       // calendar dates shift by the paused days
   const seg = getSegmentForDays(TIMING, days);
   const closingCost = seg.fee;
 
@@ -418,11 +440,13 @@ function calculate() {
   const timingText = document.getElementById('timing-text');
   timingTitle.innerHTML = 'Deal Closing Cost: ' + fmtPct(closingCost);
 
-  if (pastLongStop) {
+  if (isPaused) {
+    timingText.textContent = 'Clock paused since ' + formatBumpDate(PAUSE_DATE, 0) + ' on day ' + days + '. The Deal Closing Cost stays at ' + fmtPct(closingCost) + ' until the clock resumes.';
+  } else if (pastLongStop) {
     timingText.textContent = 'Past the ' + LONG_STOP + '-day long-stop — deal work pauses pending resubmission to the Admission Board.';
   } else if (isFirst) {
     const daysLeft = COVERED_END - days;
-    const bump = formatBumpDate(approvalDateVal, COVERED_END);
+    const bump = formatBumpDate(approvalDateVal, bumpOffset(COVERED_END));
     timingText.textContent = pluralDays(daysLeft) + ' left with Deal Closing Cost covered by Accumulator' + (bump ? ' (until ' + bump + ')' : '') + '.';
   } else if (isLast) {
     timingText.textContent = LONG_STOP !== null
@@ -431,11 +455,11 @@ function calculate() {
   } else {
     const next = TIMING[seg.segmentIndex + 1];
     const daysLeft = TIMING[seg.segmentIndex].maxDays - days;
-    const bump = formatBumpDate(approvalDateVal, TIMING[seg.segmentIndex].maxDays);
+    const bump = formatBumpDate(approvalDateVal, bumpOffset(TIMING[seg.segmentIndex].maxDays));
     timingText.textContent = pluralDays(daysLeft) + ' until the fee increases to ' + next.fee + '%' + (bump ? ' (on ' + bump + ')' : '') + '.';
   }
 
-  renderTimeline(TIMING, seg.segmentIndex, days, document.getElementById('timeline-bar'), document.getElementById('timeline-labels'), !locked);
+  renderTimeline(TIMING, seg.segmentIndex, days, document.getElementById('timeline-bar'), document.getElementById('timeline-labels'), !locked && !isPaused);
 
   results.classList.add('visible');
 }
