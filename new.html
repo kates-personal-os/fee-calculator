@@ -241,6 +241,13 @@ const presetAmount = params.get('amount');
 const UPLIFT = parseFloat(params.get('uplift')) || 0;
 const PAUSE_DATE = normalizeDateParam(params.get('pausedate'));
 const RESUME_DATE = normalizeDateParam(params.get('resumedate'));
+// Admin override of the final Deal Closing Cost (%). Empty = use the timing curve; 0 is a valid override.
+const DCC_OVERRIDE = parseOverride(params.get('dccoverride'));
+function parseOverride(str) {
+  if (str === null || str.trim() === '') return null;
+  const n = parseFloat(str.replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
 function normalizeDateParam(str) {
   if (!str) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
@@ -429,7 +436,8 @@ function calculate() {
   const days = Math.max(0, rawDays - pausedDays);
   const bumpOffset = (d) => d + pausedDays;                       // calendar dates shift by the paused days
   const seg = getSegmentForDays(TIMING, days);
-  const closingCost = seg.fee;
+  const isOverridden = DCC_OVERRIDE !== null;
+  const closingCost = isOverridden ? DCC_OVERRIDE : seg.fee;
 
   const isFirst = seg.segmentIndex === 0;                 // covered window
   const isLast = seg.segmentIndex === TIMING.length - 1;   // top tier
@@ -440,7 +448,9 @@ function calculate() {
   const timingText = document.getElementById('timing-text');
   timingTitle.innerHTML = 'Deal Closing Cost: ' + fmtPct(closingCost);
 
-  if (isPaused) {
+  if (isOverridden) {
+    timingText.textContent = 'Your Deal Closing Cost is fixed at ' + fmtPct(closingCost) + '.';
+  } else if (isPaused) {
     timingText.textContent = 'Clock paused since ' + formatBumpDate(PAUSE_DATE, 0) + ' on day ' + days + '. The Deal Closing Cost stays at ' + fmtPct(closingCost) + ' until the clock resumes.';
   } else if (pastLongStop) {
     timingText.textContent = 'Past the ' + LONG_STOP + '-day long-stop — deal work pauses pending resubmission to the Admission Board.';
@@ -459,7 +469,7 @@ function calculate() {
     timingText.textContent = pluralDays(daysLeft) + ' until the fee increases to ' + next.fee + '%' + (bump ? ' (on ' + bump + ')' : '') + '.';
   }
 
-  renderTimeline(TIMING, seg.segmentIndex, days, document.getElementById('timeline-bar'), document.getElementById('timeline-labels'), !locked && !isPaused);
+  renderTimeline(TIMING, isOverridden ? null : seg.segmentIndex, days, document.getElementById('timeline-bar'), document.getElementById('timeline-labels'), !locked && !isPaused);
 
   results.classList.add('visible');
 }
